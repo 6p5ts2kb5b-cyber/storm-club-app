@@ -924,3 +924,70 @@ h1, h2, h3, p {
   font-size: 13px;
   color: var(--ink-2);
 }
+
+/* ---------- STEP2：ログイン・アカウント表示 ---------- */
+.login__error {
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ng-bg);
+  color: var(--ng);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.panel {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: calc(var(--radius) + 4px);
+}
+
+.panel__title {
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.kv {
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kv div {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+}
+
+.kv dt {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.kv dd {
+  margin: 0;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: #e6ebf3;
+  color: var(--navy);
+}
+
+.role-tag--admin {
+  background: var(--gold);
+}
+
+.btn--block {
+  width: 100%;
+}
