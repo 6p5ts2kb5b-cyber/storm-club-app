@@ -9,6 +9,9 @@ import { DIVISION_LABEL, type Division, formatTime } from "./divisions";
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
 export type Level = "ok" | "warn" | "ng" | "none";
 
+/** 1つの活動で必要な審判の最大人数 */
+export const MAX_UMPIRES = 8;
+
 export const LEVEL_EMOJI: Record<Level, string> = {
   ok: "🟢",
   warn: "🟡",

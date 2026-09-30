@@ -1315,3 +1315,91 @@ h1, h2, h3, p {
   from { transform: translate(-50%, 12px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
+
+/* ---------- 審判の必要人数 ---------- */
+.detail-block {
+  margin-top: 12px;
+}
+
+.count-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.count-btn {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding-top: 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.count-btn__unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.count-btn--none {
+  align-items: center;
+  padding-top: 0;
+  font-size: 17px;
+  color: var(--ink-2);
+}
+
+.count-btn.is-active {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+.count-btn.is-active .count-btn__unit {
+  color: #c5d0e3;
+}
+
+.need-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.need-summary div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: #f3f5f9;
+}
+
+.need-summary__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.need-summary__num {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.need-summary .is-ng {
+  background: var(--ng-bg);
+  color: var(--ng);
+}
+
+.need-summary .is-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
