@@ -2,18 +2,20 @@
 
 // 活動日の詳細：12月〜4月は「トップ｜アカデミー」をタブで切り替えます
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import GroundPanel from "@/components/GroundPanel";
 import UmpireNeedPicker from "@/components/UmpireNeedPicker";
 import UnitCard from "@/components/UnitCard";
 import { useToast } from "@/components/useToast";
 import { saveUmpireNeed } from "@/lib/activity-actions";
 import { DIVISION_LABEL } from "@/lib/divisions";
+import { deriveGround, type Ground } from "@/lib/grounds";
 import type { UnitSummary } from "@/lib/status";
 
 const SECTIONS = [
   { no: 1, title: "基本情報", note: "右上の「編集」から変更" },
   { no: 2, title: "試合情報", note: "STEP9で入力可能に" },
-  { no: 3, title: "グラウンド", note: "STEP6で入力可能に" },
+  { no: 3, title: "グラウンド", note: "上の「グラウンド」で入力" },
   { no: 4, title: "選手集合", note: "STEP7で入力可能に" },
   { no: 5, title: "指導者", note: "STEP8で入力可能に" },
   { no: 6, title: "審判の割り当て", note: "STEP10・12で入力可能に" },
@@ -24,10 +26,13 @@ const SECTIONS = [
 export default function DivisionTabs({
   units: initialUnits,
   isAdmin,
+  canEdit,
   demo,
 }: {
   units: UnitSummary[];
   isAdmin: boolean;
+  /** グラウンド・指導者・審判を入力できるか（管理者・スタッフ） */
+  canEdit: boolean;
   demo: boolean;
 }) {
   const router = useRouter();
@@ -36,6 +41,14 @@ export default function DivisionTabs({
   const [saving, setSaving] = useState(false);
   const [toastEl, showToast] = useToast();
   const unit = units[active];
+
+  // 保存後にサーバーから届いた最新の内容で置き換える
+  useEffect(() => setUnits(initialUnits), [initialUnits]);
+
+  function changeGrounds(next: Ground[]) {
+    setUnits((list) => list.map((u, i) => (i === active ? { ...u, grounds: next, ...deriveGround(next) } : u)));
+    if (!demo) router.refresh(); // 会場の自動入力などを反映
+  }
 
   async function changeNeed(required: boolean, needed: number) {
     if (!unit) return;
@@ -81,6 +94,20 @@ export default function DivisionTabs({
       )}
 
       {unit && <UnitCard unit={unit} />}
+
+      {unit && (
+        <div className="detail-block">
+          <GroundPanel
+            key={unit.division}
+            unitId={unit.id}
+            grounds={unit.grounds ?? []}
+            canEdit={canEdit}
+            demo={demo}
+            onChange={changeGrounds}
+            notify={showToast}
+          />
+        </div>
+      )}
 
       {unit && (
         <div className="detail-block">

@@ -4,6 +4,7 @@
 // ============================================================
 
 import { divisionsForMode, type DayMode, type Division } from "./divisions";
+import { deriveGround, type Ground, sortGrounds } from "./grounds";
 import { SAMPLE_DAYS } from "./sample";
 import type { DaySummary, UnitSummary } from "./status";
 import { isSupabaseConfigured } from "./supabase/env";
@@ -21,6 +22,7 @@ export interface UnitRow {
   umpire_offset_min: number;
   umpire_gather_time: string | null;
   note: string | null;
+  grounds?: Ground[];
 }
 
 /** データベースの activity_days の1行（活動単位つき） */
@@ -33,7 +35,7 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note)";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note))";
 
 const DIVISION_ORDER: Division[] = ["top", "academy", "storm"];
 
@@ -43,6 +45,7 @@ function hhmm(t: string | null): string | undefined {
 }
 
 function unitToSummary(u: UnitRow): UnitSummary {
+  const grounds = sortGrounds(u.grounds ?? []);
   return {
     id: u.id,
     division: u.division,
@@ -50,9 +53,9 @@ function unitToSummary(u: UnitRow): UnitSummary {
     note: u.note ?? undefined,
     venue: u.venue ?? undefined,
     playerGatherTime: hhmm(u.player_gather_time),
-    // ↓ グラウンド・指導者・試合・審判の割り当ては STEP6〜12 でつなぎます
-    groundState: "none",
-    candidateCount: 0,
+    grounds,
+    ...deriveGround(grounds),
+    // ↓ 指導者・試合・審判の割り当ては STEP8〜12 でつなぎます
     coaches: [],
     umpireRequired: u.umpire_required,
     umpireNeeded: u.umpire_needed_count,
@@ -113,4 +116,15 @@ export async function currentIsAdmin(): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("is_admin");
   return data === true;
+}
+
+export type Role = "admin" | "staff" | "viewer";
+
+/** ログイン中の人の権限（お試しモードでは管理者として扱う） */
+export async function currentRole(): Promise<Role | null> {
+  if (!isSupabaseConfigured) return "admin";
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("current_staff").maybeSingle();
+  const role = (data as { role?: Role } | null)?.role;
+  return role ?? null;
 }

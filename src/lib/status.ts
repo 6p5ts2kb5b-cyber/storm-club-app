@@ -5,6 +5,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
+import type { Ground } from "./grounds";
 
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
 export type Level = "ok" | "warn" | "ng" | "none";
@@ -28,10 +29,12 @@ export interface UnitSummary {
   note?: string;
   venue?: string;
   playerGatherTime?: string;
-  /** decided = 使用決定 / checking = 確認中あり / none = 未確保 */
-  groundState: "decided" | "checking" | "none";
+  /** decided = 使用決定 / checking = 確認中あり / undecided = 候補はあるが未決定 / none = 未確保 */
+  groundState: "decided" | "checking" | "undecided" | "none";
   groundName?: string;
   candidateCount: number;
+  /** グラウンド候補の一覧（詳細画面で使用） */
+  grounds?: Ground[];
   coaches: string[];
   umpireRequired: boolean;
   umpireNeeded: number;
@@ -68,6 +71,8 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
     items.push({ key: "ground", label: "グラウンド", level: "ok", text: u.groundName ? `確定（${u.groundName}）` : "確定" });
   } else if (u.groundState === "checking") {
     items.push({ key: "ground", label: "グラウンド", level: "warn", text: `確認中（候補${u.candidateCount}校）` });
+  } else if (u.groundState === "undecided") {
+    items.push({ key: "ground", label: "グラウンド", level: "warn", text: `未決定（候補${u.candidateCount}校）` });
   } else {
     items.push({ key: "ground", label: "グラウンド", level: "ng", text: "未確保" });
   }
