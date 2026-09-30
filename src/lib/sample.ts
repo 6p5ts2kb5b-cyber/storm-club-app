@@ -4,7 +4,13 @@
 // ============================================================
 
 import { deriveGround, type Ground, type GroundStatus, type SchoolUse, type StormUse } from "./grounds";
+import { SAMPLE_STAFF } from "./staff";
 import type { DaySummary } from "./status";
+
+/** 名前からサンプルのスタッフ番号を引いて、指導者の情報を作る */
+function coaches(...names: string[]) {
+  return { coaches: names, coachIds: names.map((n) => SAMPLE_STAFF.find((s) => s.name === n)?.id ?? n) };
+}
 
 let seq = 0;
 function g(school: string, status: GroundStatus, school_use: SchoolUse, storm_use: StormUse, note: string | null = null): Ground {
@@ -32,9 +38,10 @@ export const SAMPLE_DAYS: DaySummary[] = [
         division: "storm",
         venue: "坂戸中学校",
         playerGatherTime: "07:30",
+        gatherPlace: "現地集合",
         grounds: G_1003,
         ...deriveGround(G_1003),
-        coaches: ["玉城", "田中", "佐藤"],
+        ...coaches("玉城", "田中", "佐藤"),
         umpireRequired: true,
         umpireNeeded: 4,
         umpireAssigned: 2,
@@ -58,7 +65,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
         venue: "住吉中学校",
         grounds: G_1010,
         ...deriveGround(G_1010),
-        coaches: [],
+        ...coaches(),
         umpireRequired: false,
         umpireNeeded: 0,
         umpireAssigned: 0,
@@ -79,7 +86,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
         playerGatherTime: "07:30",
         grounds: G_1205_TOP,
         ...deriveGround(G_1205_TOP),
-        coaches: ["玉城", "田中", "鈴木"],
+        ...coaches("玉城", "田中", "鈴木"),
         umpireRequired: true,
         umpireNeeded: 4,
         umpireAssigned: 2,
@@ -97,7 +104,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
         playerGatherTime: "08:00",
         grounds: G_1205_ACA,
         ...deriveGround(G_1205_ACA),
-        coaches: ["田中", "佐藤"],
+        ...coaches("田中", "佐藤"),
         umpireRequired: true,
         umpireNeeded: 2,
         umpireAssigned: 2,

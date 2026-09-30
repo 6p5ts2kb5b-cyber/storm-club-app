@@ -36,6 +36,10 @@ export interface UnitSummary {
   /** グラウンド候補の一覧（詳細画面で使用） */
   grounds?: Ground[];
   coaches: string[];
+  /** 参加指導者のスタッフ番号（詳細画面での選択に使用） */
+  coachIds?: string[];
+  /** 選手の集合場所（現地・学校・駅など） */
+  gatherPlace?: string;
   umpireRequired: boolean;
   umpireNeeded: number;
   umpireAssigned: number;

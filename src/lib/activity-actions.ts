@@ -104,3 +104,32 @@ export async function saveUmpireNeed(unitId: string, required: boolean, needed: 
     .eq("id", unitId);
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }
+
+/** 選手集合時間・集合場所を保存（time は "07:30"、空なら未設定） */
+export async function savePlayerGather(unitId: string, time: string | null, place: string | null): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("activity_units")
+    .update({ player_gather_time: time || null, gather_place: place && place.trim() ? place.trim() : null })
+    .eq("id", unitId);
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}
+
+function explainCoach(err: { message?: string; code?: string } | null | undefined): string {
+  const message = err?.message ?? "";
+  if (err?.code === "23505" || /duplicate|unique/i.test(message)) return "この人はすでに参加になっています。";
+  if (err?.code === "42501" || /row-level security|permission/i.test(message)) return "閲覧のみの権限では変更できません。";
+  if (/fetch|network/i.test(message)) return "インターネットにつながっていません。電波の良い場所でもう一度押してください。";
+  return "保存できませんでした。時間をおいてもう一度お試しください。";
+}
+
+/** 指導者を参加にする／取り消す */
+export async function setCoach(unitId: string, staffId: string, join: boolean): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = join
+    ? await supabase.from("coach_assignments").insert({ unit_id: unitId, staff_id: staffId })
+    : await supabase.from("coach_assignments").delete().eq("unit_id", unitId).eq("staff_id", staffId);
+  // すでに登録済み（ほかの人が同時に押した）なら、結果は同じなので成功扱い
+  if (error && join && (error.code === "23505" || /duplicate/i.test(error.message ?? ""))) return { ok: true };
+  return error ? { ok: false, message: explainCoach(error) } : { ok: true };
+}
