@@ -25,7 +25,8 @@ export interface UnitRow {
   umpire_gather_time: string | null;
   note: string | null;
   grounds?: Ground[];
-  coach_assignments?: { staff_id: string; staff: { name: string } | null }[];
+  // staff はデータベースから「1件」または「1件入りの一覧」で届くことがあるので両方に対応
+  coach_assignments?: { staff_id: string; staff: { name: string } | { name: string }[] | null }[];
 }
 
 /** データベースの activity_days の1行（活動単位つき） */
@@ -49,9 +50,9 @@ function hhmm(t: string | null): string | undefined {
 
 function unitToSummary(u: UnitRow): UnitSummary {
   const grounds = sortGrounds(u.grounds ?? []);
-  const coachRows = [...(u.coach_assignments ?? [])].sort((a, b) =>
-    (a.staff?.name ?? "").localeCompare(b.staff?.name ?? "", "ja"),
-  );
+  const staffName = (c: NonNullable<UnitRow["coach_assignments"]>[number]) =>
+    (Array.isArray(c.staff) ? c.staff[0]?.name : c.staff?.name) ?? "（削除された人）";
+  const coachRows = [...(u.coach_assignments ?? [])].sort((a, b) => staffName(a).localeCompare(staffName(b), "ja"));
   return {
     id: u.id,
     division: u.division,
@@ -62,7 +63,7 @@ function unitToSummary(u: UnitRow): UnitSummary {
     gatherPlace: u.gather_place ?? undefined,
     grounds,
     ...deriveGround(grounds),
-    coaches: coachRows.map((c) => c.staff?.name ?? "（削除された人）"),
+    coaches: coachRows.map(staffName),
     coachIds: coachRows.map((c) => c.staff_id),
     // ↓ 試合・審判の割り当ては STEP9〜12 でつなぎます
     umpireRequired: u.umpire_required,
@@ -104,7 +105,7 @@ export async function loadDays(from?: string): Promise<LoadResult<DaySummary[]>>
   if (from) query = query.gte("date", from);
   const { data, error } = await query;
   if (error) return { ok: false, message: "活動日を読み込めませんでした。インターネットの接続を確認して、再読み込みしてください。" };
-  return { ok: true, data: ((data ?? []) as DayRow[]).map(dayToSummary) };
+  return { ok: true, data: ((data ?? []) as unknown as DayRow[]).map(dayToSummary) };
 }
 
 /** 1日分（なければ null） */
@@ -115,7 +116,7 @@ export async function loadDay(date: string): Promise<LoadResult<DaySummary | nul
   const supabase = await createClient();
   const { data, error } = await supabase.from("activity_days").select(DAY_SELECT).eq("date", date).maybeSingle();
   if (error) return { ok: false, message: "活動日を読み込めませんでした。インターネットの接続を確認して、再読み込みしてください。" };
-  return { ok: true, data: data ? dayToSummary(data as DayRow) : null };
+  return { ok: true, data: data ? dayToSummary(data as unknown as DayRow) : null };
 }
 
 /** ログイン中の人が管理者か（お試しモードでは管理者として扱う） */
