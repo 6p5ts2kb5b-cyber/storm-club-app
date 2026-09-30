@@ -4,7 +4,8 @@ import Link from "next/link";
 import SampleBanner from "@/components/SampleBanner";
 import UnitCard from "@/components/UnitCard";
 import { daysFromToday, formatDateLong, formatDateShort, todayInTokyo } from "@/lib/divisions";
-import { SAMPLE_DAYS } from "@/lib/sample";
+import { loadDays } from "@/lib/data";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { collectIssues, LEVEL_EMOJI } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,10 @@ function untilLabel(n: number): string {
   return `あと${n}日`;
 }
 
-export default function HomePage() {
+export default async function HomePage() {
   const today = todayInTokyo();
-  const upcoming = SAMPLE_DAYS.filter((d) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const result = await loadDays(today);
+  const upcoming = result.ok ? [...result.data].sort((a, b) => a.date.localeCompare(b.date)) : [];
   const issues = collectIssues(upcoming);
   const [next, ...rest] = upcoming;
 
@@ -28,7 +30,14 @@ export default function HomePage() {
         <h1 className="page-head__title">ホーム</h1>
       </header>
 
-      <SampleBanner />
+      {!isSupabaseConfigured && <SampleBanner />}
+      {!result.ok && <p className="form-error">🔴 {result.message}</p>}
+      {result.ok && upcoming.length === 0 && (
+        <div className="empty">
+          <p>これからの活動はまだ登録されていません。</p>
+          <Link href="/activities" className="btn btn--primary">活動一覧へ</Link>
+        </div>
+      )}
 
       {/* 要確認：このアプリで一番大事な場所 */}
       <section className="block" aria-labelledby="issues-title">
@@ -37,7 +46,7 @@ export default function HomePage() {
           <span className={`count-badge${issues.length ? " count-badge--ng" : ""}`}>{issues.length}件</span>
         </div>
 
-        {issues.length === 0 ? (
+        {upcoming.length === 0 ? null : issues.length === 0 ? (
           <p className="all-clear">🟢 すべて準備できています</p>
         ) : (
           <ul className="issue-list">

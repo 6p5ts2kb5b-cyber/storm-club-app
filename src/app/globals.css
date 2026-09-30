@@ -1403,3 +1403,70 @@ h1, h2, h3, p {
   background: var(--ok-bg);
   color: var(--ok);
 }
+
+/* ---------- STEP4：活動日の登録 ---------- */
+.chip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.chip-btn {
+  min-height: var(--tap);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font: inherit;
+  font-weight: 800;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.chip-btn.is-active {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+.btn--danger {
+  margin-top: 4px;
+  border-color: #f3c4c4;
+  color: var(--ng);
+  background: #fff;
+}
+
+.list-heading {
+  margin: 4px 2px 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.past {
+  margin-top: 20px;
+}
+
+.past summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-weight: 800;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.past .list {
+  opacity: 0.75;
+}
+
+.toast {
+  max-width: calc(100vw - 32px);
+  white-space: normal;
+  text-align: center;
+  border-radius: 20px;
+}
+
+.count-btn:disabled {
+  cursor: default;
+}

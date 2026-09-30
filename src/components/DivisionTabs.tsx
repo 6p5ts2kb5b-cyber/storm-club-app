@@ -1,41 +1,64 @@
 "use client";
 
 // 活動日の詳細：12月〜4月は「トップ｜アカデミー」をタブで切り替えます
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import UmpireNeedPicker from "@/components/UmpireNeedPicker";
 import UnitCard from "@/components/UnitCard";
+import { useToast } from "@/components/useToast";
+import { saveUmpireNeed } from "@/lib/activity-actions";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import type { UnitSummary } from "@/lib/status";
 
 const SECTIONS = [
-  { no: 1, title: "基本情報", step: "STEP4・5" },
-  { no: 2, title: "試合情報", step: "STEP9" },
-  { no: 3, title: "グラウンド", step: "STEP6" },
-  { no: 4, title: "選手集合", step: "STEP7" },
-  { no: 5, title: "指導者", step: "STEP8" },
-  { no: 6, title: "審判の割り当て", step: "STEP10・12" },
-  { no: 7, title: "審判集合", step: "STEP11" },
-  { no: 8, title: "メモ", step: "STEP4" },
+  { no: 1, title: "基本情報", note: "右上の「編集」から変更" },
+  { no: 2, title: "試合情報", note: "STEP9で入力可能に" },
+  { no: 3, title: "グラウンド", note: "STEP6で入力可能に" },
+  { no: 4, title: "選手集合", note: "STEP7で入力可能に" },
+  { no: 5, title: "指導者", note: "STEP8で入力可能に" },
+  { no: 6, title: "審判の割り当て", note: "STEP10・12で入力可能に" },
+  { no: 7, title: "審判集合", note: "STEP11で入力可能に" },
+  { no: 8, title: "メモ", note: "右上の「編集」から変更" },
 ];
 
-export default function DivisionTabs({ units: initialUnits }: { units: UnitSummary[] }) {
+export default function DivisionTabs({
+  units: initialUnits,
+  isAdmin,
+  demo,
+}: {
+  units: UnitSummary[];
+  isAdmin: boolean;
+  demo: boolean;
+}) {
+  const router = useRouter();
   const [units, setUnits] = useState<UnitSummary[]>(initialUnits);
   const [active, setActive] = useState(0);
-  const [toast, setToast] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toastEl, showToast] = useToast();
   const unit = units[active];
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  function changeNeed(required: boolean, needed: number) {
+  async function changeNeed(required: boolean, needed: number) {
+    if (!unit) return;
+    const before = units;
+    // 先に画面を切り替えて、すぐ反応しているように見せる
     setUnits((list) =>
       list.map((u, i) => (i === active ? { ...u, umpireRequired: required, umpireNeeded: needed } : u)),
     );
-    // STEP4でクラウド保存に切り替えます。いまは画面の中だけの変更です
-    setToast("保存しました（お試しモード）");
+
+    if (demo || !unit.id) {
+      showToast("ok", "保存しました（お試しモード）");
+      return;
+    }
+    setSaving(true);
+    const result = await saveUmpireNeed(unit.id, required, needed);
+    setSaving(false);
+    if (result.ok) {
+      showToast("ok", "保存しました");
+      router.refresh();
+    } else {
+      setUnits(before); // 保存できなかったら元に戻す
+      showToast("ng", result.message);
+    }
   }
 
   return (
@@ -65,6 +88,7 @@ export default function DivisionTabs({ units: initialUnits }: { units: UnitSumma
             required={unit.umpireRequired}
             needed={unit.umpireNeeded}
             assigned={unit.umpireAssigned}
+            disabled={!isAdmin || saving}
             onChange={changeNeed}
           />
         </div>
@@ -75,16 +99,12 @@ export default function DivisionTabs({ units: initialUnits }: { units: UnitSumma
           <li key={s.no} className="section-list__item">
             <span className="section-list__no">{s.no}</span>
             <span className="section-list__title">{s.title}</span>
-            <span className="section-list__step">{s.step}で入力可能に</span>
+            <span className="section-list__step">{s.note}</span>
           </li>
         ))}
       </ol>
 
-      {toast && (
-        <div className="toast toast--ok" role="status">
-          ✓ {toast}
-        </div>
-      )}
+      {toastEl}
     </div>
   );
 }

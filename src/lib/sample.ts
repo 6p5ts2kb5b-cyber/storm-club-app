@@ -8,6 +8,7 @@ import type { DaySummary } from "./status";
 export const SAMPLE_DAYS: DaySummary[] = [
   {
     date: "2026-10-03",
+    mode: "single",
     activityType: "練習試合",
     units: [
       {
@@ -32,6 +33,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
   },
   {
     date: "2026-10-10",
+    mode: "single",
     activityType: "練習",
     units: [
       {
@@ -50,6 +52,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
   },
   {
     date: "2026-12-05",
+    mode: "split",
     activityType: "練習試合",
     units: [
       {

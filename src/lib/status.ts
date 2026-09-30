@@ -4,7 +4,7 @@
 // こうすることで「人数はそろったのに表示が🔴のまま」というズレが起きません。
 // ============================================================
 
-import { DIVISION_LABEL, type Division, formatTime } from "./divisions";
+import { DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
 
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
 export type Level = "ok" | "warn" | "ng" | "none";
@@ -21,7 +21,11 @@ export const LEVEL_EMOJI: Record<Level, string> = {
 
 /** ホーム画面で使う「活動単位（トップ／アカデミー／STORM の1日分）」の要約 */
 export interface UnitSummary {
+  /** データベースの番号（お試しモードでは空） */
+  id?: string;
   division: Division;
+  activityType?: string;
+  note?: string;
   venue?: string;
   playerGatherTime?: string;
   /** decided = 使用決定 / checking = 確認中あり / none = 未確保 */
@@ -39,8 +43,11 @@ export interface UnitSummary {
 }
 
 export interface DaySummary {
+  id?: string;
   date: string;
+  mode: DayMode;
   activityType: string;
+  note?: string;
   units: UnitSummary[];
 }
 

@@ -8,11 +8,13 @@ export default function UmpireNeedPicker({
   required,
   needed,
   assigned,
+  disabled = false,
   onChange,
 }: {
   required: boolean;
   needed: number;
   assigned: number;
+  disabled?: boolean;
   onChange: (required: boolean, needed: number) => void;
 }) {
   const short = Math.max(0, needed - assigned);
@@ -28,6 +30,7 @@ export default function UmpireNeedPicker({
           role="radio"
           aria-checked={!required}
           className={`count-btn count-btn--none${!required ? " is-active" : ""}`}
+          disabled={disabled}
           onClick={() => onChange(false, 0)}
         >
           不要
@@ -41,6 +44,7 @@ export default function UmpireNeedPicker({
               role="radio"
               aria-checked={on}
               className={`count-btn${on ? " is-active" : ""}`}
+              disabled={disabled}
               onClick={() => onChange(true, n)}
             >
               {n}

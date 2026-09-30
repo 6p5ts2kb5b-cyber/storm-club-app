@@ -92,14 +92,11 @@ export default function MonthCalendar({ today, marks }: { today: string; marks: 
               )}
             </>
           );
-          return mark ? (
+          // すべての日付をタップ可能に（活動がない日は、その日の登録画面へ）
+          return (
             <Link key={date} href={`/activities/${date}`} className={cls}>
               {inner}
             </Link>
-          ) : (
-            <div key={date} className={cls}>
-              {inner}
-            </div>
           );
         })}
       </div>
