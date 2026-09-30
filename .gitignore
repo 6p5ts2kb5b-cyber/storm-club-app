@@ -1,0 +1,16 @@
+# 自動生成されるもの（GitHubに保存しない）
+/node_modules
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts.bak
+
+# 秘密の設定値（絶対にGitHubに保存しない）
+.env
+.env*.local
+
+# その他
+.DS_Store
+npm-debug.log*
+.vercel
