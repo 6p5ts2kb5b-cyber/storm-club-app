@@ -33,13 +33,14 @@ export default async function HomePage() {
       {!isSupabaseConfigured && <SampleBanner />}
       {!result.ok && <p className="form-error">🔴 {result.message}</p>}
       {result.ok && upcoming.length === 0 && (
-        <div className="empty">
+        <div className="empty empty--home">
           <p>これからの活動はまだ登録されていません。</p>
           <Link href="/activities" className="btn btn--primary">活動一覧へ</Link>
         </div>
       )}
 
-      {/* 要確認：このアプリで一番大事な場所 */}
+      {/* 要確認：このアプリで一番大事な場所（活動があるときだけ表示） */}
+      {upcoming.length > 0 && (
       <section className="block" aria-labelledby="issues-title">
         <div className="block__head">
           <h2 id="issues-title" className="block__title">要確認</h2>
@@ -67,6 +68,7 @@ export default async function HomePage() {
           </ul>
         )}
       </section>
+      )}
 
       {/* 次の活動 */}
       {next && (
