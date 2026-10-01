@@ -46,7 +46,9 @@ STORMクラブの活動準備（グラウンド・選手集合時間・指導者
 
 ## データベースの準備（Supabase）
 
-`supabase/migrations/` の中のSQLを、番号の順に Supabase の「SQL Editor」で実行します。
+いちばん簡単なのは `supabase/setup_all.sql` の中身を Supabase の「SQL Editor」に貼り付けて「Run」を押す方法です（何度実行しても大丈夫）。
+
+中身は `supabase/migrations/` の次のSQLを順番につなげたものです。
 
 1. `0001_staff_and_login.sql` … スタッフマスター・ログインの許可ルール
 2. `0002_activity_days.sql` … 活動日・活動単位（トップ／アカデミー／STORM）
