@@ -11,7 +11,7 @@ create table if not exists public.games (
   game_no             integer not null check (game_no between 1 and 20),                       -- 第何試合か
   start_time          time,                                                                    -- 試合開始時間
   opponent            text,                                                                    -- 対戦相手（任意）
-  required_positions  text[] not null default array['plate', 'first', 'second', 'third'],      -- この試合で必要な審判ポジション（STEP12で使用）
+  umpire_system       smallint not null default 4 check (umpire_system between 1 and 4),        -- 審判の人数制：1人制〜4人制（基本は4人制）
   note                text,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),

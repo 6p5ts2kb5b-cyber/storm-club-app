@@ -6,6 +6,7 @@
 
 import { DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
 import type { Ground } from "./grounds";
+import type { Slot, UmpirePerson } from "./umpire";
 
 /** 1つの試合 */
 export interface Game {
@@ -14,6 +15,8 @@ export interface Game {
   /** 試合開始時間 "09:00"（未定なら空） */
   start?: string;
   opponent?: string;
+  /** 審判の人数制（1〜4人制。基本は4人制） */
+  system?: 1 | 2 | 3 | 4;
   note?: string;
 }
 
@@ -52,8 +55,20 @@ export interface UnitSummary {
   gatherPlace?: string;
   umpireRequired: boolean;
   umpireNeeded: number;
+  /** 審判をするSTORMのスタッフの人数（自動集計） */
   umpireAssigned: number;
+  /** 実際に使う審判集合時間（手動 ＞ 自動） */
   umpireGatherTime?: string;
+  /** 自動計算した審判集合時間（第1試合 − 何分前） */
+  umpireGatherAuto?: string;
+  /** 管理者が手動で決めた審判集合時間 */
+  umpireGatherManual?: string;
+  /** 試合開始の何分前に集合か */
+  umpireOffset?: number;
+  /** 試合ごとの審判の枠 */
+  umpireSlots?: Slot[];
+  /** 審判一人ずつの集合時間の設定 */
+  umpirePeople?: UmpirePerson[];
   games: Game[];
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
@@ -122,7 +137,12 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
     items.push(
       u.umpireGatherTime
         ? { key: "umpireGather", label: "審判集合", level: "ok", text: formatTime(u.umpireGatherTime) }
-        : { key: "umpireGather", label: "審判集合", level: "ng", text: "未設定" },
+        : {
+            key: "umpireGather",
+            label: "審判集合",
+            level: "ng",
+            text: u.games.some((g) => g.start) ? "未設定" : "未設定（試合時間が未入力）",
+          },
     );
   }
 

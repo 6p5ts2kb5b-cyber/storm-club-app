@@ -6,6 +6,7 @@
 import { divisionsForMode, type DayMode, type Division } from "./divisions";
 import { deriveGround, type Ground, sortGrounds } from "./grounds";
 import { SAMPLE_DAYS } from "./sample";
+import { DEFAULT_OFFSET, deriveUmpire, type Position, type Slot } from "./umpire";
 import { SAMPLE_STAFF } from "./staff";
 import type { DaySummary, Game, UnitSummary } from "./status";
 import { isSupabaseConfigured } from "./supabase/env";
@@ -25,7 +26,22 @@ export interface UnitRow {
   umpire_gather_time: string | null;
   note: string | null;
   grounds?: Ground[];
-  games?: { id: string; game_no: number; start_time: string | null; opponent: string | null; note: string | null }[];
+  games?: {
+    id: string;
+    game_no: number;
+    start_time: string | null;
+    opponent: string | null;
+    umpire_system: number | null;
+    note: string | null;
+    umpire_slots?: {
+      id: string;
+      position: Position;
+      staff_id: string | null;
+      is_opponent: boolean;
+      staff: { name: string } | { name: string }[] | null;
+    }[];
+  }[];
+  umpire_people?: { staff_id: string; offset_min: number | null; gather_time: string | null; note: string | null }[];
   // staff はデータベースから「1件」または「1件入りの一覧」で届くことがあるので両方に対応
   coach_assignments?: { staff_id: string; staff: { name: string } | { name: string }[] | null }[];
 }
@@ -40,7 +56,7 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,note))";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,umpire_system,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
 
 const DIVISION_ORDER: Division[] = ["top", "academy", "storm"];
 
@@ -54,7 +70,17 @@ function unitToSummary(u: UnitRow): UnitSummary {
   const staffName = (c: NonNullable<UnitRow["coach_assignments"]>[number]) =>
     (Array.isArray(c.staff) ? c.staff[0]?.name : c.staff?.name) ?? "（削除された人）";
   const coachRows = [...(u.coach_assignments ?? [])].sort((a, b) => staffName(a).localeCompare(staffName(b), "ja"));
-  return {
+  const slots: Slot[] = (u.games ?? []).flatMap((g) =>
+    (g.umpire_slots ?? []).map((sl) => ({
+      id: sl.id,
+      gameId: g.id,
+      position: sl.position,
+      staffId: sl.staff_id ?? undefined,
+      staffName: (Array.isArray(sl.staff) ? sl.staff[0]?.name : sl.staff?.name) ?? undefined,
+      opponent: sl.is_opponent,
+    })),
+  );
+  const summary: UnitSummary = {
     id: u.id,
     division: u.division,
     activityType: u.activity_type ?? undefined,
@@ -74,16 +100,26 @@ function unitToSummary(u: UnitRow): UnitSummary {
           no: g.game_no,
           start: hhmm(g.start_time),
           opponent: g.opponent ?? undefined,
+          system: (g.umpire_system ?? 4) as Game["system"],
           note: g.note ?? undefined,
         }),
       ),
-    // ↓ 審判の割り当ては STEP10〜12 でつなぎます
     umpireRequired: u.umpire_required,
     umpireNeeded: u.umpire_needed_count,
+    umpireOffset: u.umpire_offset_min ?? DEFAULT_OFFSET,
+    umpireGatherManual: hhmm(u.umpire_gather_time),
+    umpireSlots: slots,
+    umpirePeople: (u.umpire_people ?? []).map((p) => ({
+      staffId: p.staff_id,
+      offsetMin: p.offset_min ?? undefined,
+      gatherTime: hhmm(p.gather_time),
+      note: p.note ?? undefined,
+    })),
+    // ↓ 以下は上の内容から自動で計算（決定人数・空き枠・審判集合時間）
     umpireAssigned: 0,
-    umpireGatherTime: hhmm(u.umpire_gather_time),
     openPositions: [],
   };
+  return { ...summary, ...deriveUmpire(summary) };
 }
 
 /** データベースの行を、画面で使う形に直します（いまの区分モードの単位だけ表示） */

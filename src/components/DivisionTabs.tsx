@@ -8,14 +8,15 @@ import CoachPanel from "@/components/CoachPanel";
 import GamePanel from "@/components/GamePanel";
 import GroundPanel from "@/components/GroundPanel";
 import PlayerGatherPanel from "@/components/PlayerGatherPanel";
-import UmpireNeedPicker from "@/components/UmpireNeedPicker";
+import UmpireSection from "@/components/UmpireSection";
 import UnitCard from "@/components/UnitCard";
 import { useToast } from "@/components/useToast";
-import { saveUmpireNeed, savePlayerGather, setCoach } from "@/lib/activity-actions";
+import { savePlayerGather, setCoach } from "@/lib/activity-actions";
 import type { StaffOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
 import type { Game, UnitSummary } from "@/lib/status";
+import { deriveUmpire } from "@/lib/umpire";
 
 const SECTIONS = [
   { no: 1, title: "基本情報", note: "右上の「編集」から変更" },
@@ -23,8 +24,8 @@ const SECTIONS = [
   { no: 3, title: "グラウンド", note: "上で入力" },
   { no: 4, title: "選手集合", note: "上で入力" },
   { no: 5, title: "指導者", note: "上で入力" },
-  { no: 6, title: "審判の割り当て", note: "STEP10・12で入力可能に" },
-  { no: 7, title: "審判集合", note: "STEP11で入力可能に" },
+  { no: 6, title: "審判", note: "上で入力（必要人数・試合ごとの枠）" },
+  { no: 7, title: "審判集合", note: "上で入力（自動計算＋手動修正）" },
   { no: 8, title: "メモ", note: "右上の「編集」から変更" },
 ];
 
@@ -46,7 +47,6 @@ export default function DivisionTabs({
   const router = useRouter();
   const [units, setUnits] = useState<UnitSummary[]>(initialUnits);
   const [active, setActive] = useState(0);
-  const [saving, setSaving] = useState(false);
   const [coachBusy, setCoachBusy] = useState<string | null>(null);
   const [toastEl, showToast] = useToast();
   const unit = units[active];
@@ -54,13 +54,24 @@ export default function DivisionTabs({
   // 保存後にサーバーから届いた最新の内容で置き換える
   useEffect(() => setUnits(initialUnits), [initialUnits]);
 
-  /** いま表示している区分の内容だけを書き換える */
+  /** いま表示している区分の内容だけを書き換える（審判の集計も計算し直す） */
   function patchActive(patch: Partial<UnitSummary>) {
-    setUnits((list) => list.map((u, i) => (i === active ? { ...u, ...patch } : u)));
+    setUnits((list) =>
+      list.map((u, i) => {
+        if (i !== active) return u;
+        const next = { ...u, ...patch };
+        return { ...next, ...deriveUmpire(next) };
+      }),
+    );
   }
 
   function changeGames(next: Game[]) {
-    patchActive({ games: [...next].sort((a, b) => a.no - b.no) });
+    const ids = new Set(next.map((g) => g.id));
+    patchActive({
+      games: [...next].sort((a, b) => a.no - b.no),
+      // 削除された試合の審判の枠も外す
+      umpireSlots: (unit?.umpireSlots ?? []).filter((s) => ids.has(s.gameId)),
+    });
     if (!demo) router.refresh();
   }
 
@@ -108,27 +119,6 @@ export default function DivisionTabs({
       router.refresh();
     } else {
       patchActive({ coachIds: beforeIds, coaches: staff.filter((s) => beforeIds.includes(s.id)).map((s) => s.name) });
-      showToast("ng", result.message);
-    }
-  }
-
-  async function changeNeed(required: boolean, needed: number) {
-    if (!unit) return;
-    const before = units;
-    patchActive({ umpireRequired: required, umpireNeeded: needed });
-
-    if (demo || !unit.id) {
-      showToast("ok", "保存しました（お試しモード）");
-      return;
-    }
-    setSaving(true);
-    const result = await saveUmpireNeed(unit.id, required, needed);
-    setSaving(false);
-    if (result.ok) {
-      showToast("ok", "保存しました");
-      router.refresh();
-    } else {
-      setUnits(before); // 保存できなかったら元に戻す
       showToast("ng", result.message);
     }
   }
@@ -208,12 +198,15 @@ export default function DivisionTabs({
 
       {unit && (
         <div className="detail-block">
-          <UmpireNeedPicker
-            required={unit.umpireRequired}
-            needed={unit.umpireNeeded}
-            assigned={unit.umpireAssigned}
-            disabled={!isAdmin || saving}
-            onChange={changeNeed}
+          <UmpireSection
+            key={`ump-${unit.division}`}
+            unit={unit}
+            staff={staff}
+            isAdmin={isAdmin}
+            canEdit={canEdit}
+            demo={demo}
+            onPatch={patchActive}
+            notify={showToast}
           />
         </div>
       )}
