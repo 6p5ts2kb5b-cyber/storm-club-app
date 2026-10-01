@@ -7,7 +7,7 @@ import { divisionsForMode, type DayMode, type Division } from "./divisions";
 import { deriveGround, type Ground, sortGrounds } from "./grounds";
 import { SAMPLE_DAYS } from "./sample";
 import { SAMPLE_STAFF } from "./staff";
-import type { DaySummary, UnitSummary } from "./status";
+import type { DaySummary, Game, UnitSummary } from "./status";
 import { isSupabaseConfigured } from "./supabase/env";
 import { createClient } from "./supabase/server";
 
@@ -25,6 +25,7 @@ export interface UnitRow {
   umpire_gather_time: string | null;
   note: string | null;
   grounds?: Ground[];
+  games?: { id: string; game_no: number; start_time: string | null; opponent: string | null; note: string | null }[];
   // staff はデータベースから「1件」または「1件入りの一覧」で届くことがあるので両方に対応
   coach_assignments?: { staff_id: string; staff: { name: string } | { name: string }[] | null }[];
 }
@@ -39,7 +40,7 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)))";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,note))";
 
 const DIVISION_ORDER: Division[] = ["top", "academy", "storm"];
 
@@ -65,12 +66,22 @@ function unitToSummary(u: UnitRow): UnitSummary {
     ...deriveGround(grounds),
     coaches: coachRows.map(staffName),
     coachIds: coachRows.map((c) => c.staff_id),
-    // ↓ 試合・審判の割り当ては STEP9〜12 でつなぎます
+    games: [...(u.games ?? [])]
+      .sort((a, b) => a.game_no - b.game_no)
+      .map(
+        (g): Game => ({
+          id: g.id,
+          no: g.game_no,
+          start: hhmm(g.start_time),
+          opponent: g.opponent ?? undefined,
+          note: g.note ?? undefined,
+        }),
+      ),
+    // ↓ 審判の割り当ては STEP10〜12 でつなぎます
     umpireRequired: u.umpire_required,
     umpireNeeded: u.umpire_needed_count,
     umpireAssigned: 0,
     umpireGatherTime: hhmm(u.umpire_gather_time),
-    games: [],
     openPositions: [],
   };
 }

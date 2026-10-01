@@ -5,7 +5,7 @@ import { checkUnit, LEVEL_EMOJI, worstLevel, type UnitSummary } from "@/lib/stat
 export default function UnitCard({ unit, compact = false }: { unit: UnitSummary; compact?: boolean }) {
   const items = checkUnit(unit);
   const worst = worstLevel(unit);
-  const firstGame = unit.games.find((g) => g.no === 1);
+  const games = [...unit.games].sort((a, b) => a.no - b.no);
 
   return (
     <section className={`unit-card unit-card--${unit.division} level-${worst}`}>
@@ -21,13 +21,24 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
           <dt>会場</dt>
           <dd>{unit.venue ?? <span className="muted">未定</span>}</dd>
         </div>
-        {firstGame?.start && (
+        {unit.playerGatherTime && (
           <div>
-            <dt>第1試合</dt>
-            <dd>{formatTime(firstGame.start)}</dd>
+            <dt>選手集合</dt>
+            <dd>{formatTime(unit.playerGatherTime)}</dd>
           </div>
         )}
       </dl>
+
+      {games.length > 0 && (
+        <ul className="game-strip" aria-label="試合の開始時間">
+          {games.map((g) => (
+            <li key={g.id ?? g.no} className={g.start ? "" : "is-empty"}>
+              <span className="game-strip__no">第{g.no}試合</span>
+              <span className="game-strip__time">{g.start ? formatTime(g.start) : "未定"}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {!compact && (
         <ul className="checks">

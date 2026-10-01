@@ -133,3 +133,59 @@ export async function setCoach(unitId: string, staffId: string, join: boolean): 
   if (error && join && (error.code === "23505" || /duplicate/i.test(error.message ?? ""))) return { ok: true };
   return error ? { ok: false, message: explainCoach(error) } : { ok: true };
 }
+
+// ---------------- 試合（STEP9） ----------------
+
+export interface GameInput {
+  start: string; // "09:00"（空なら未定）
+  opponent: string;
+  note: string;
+}
+
+export type GameSaveResult =
+  | { ok: true; game: { id: string; no: number; start?: string; opponent?: string; note?: string } }
+  | { ok: false; message: string };
+
+function explainGame(err: { message?: string; code?: string } | null | undefined): string {
+  const message = err?.message ?? "";
+  if (err?.code === "23505" || /duplicate|unique/i.test(message)) return "同じ番号の試合がすでにあります。画面を再読み込みしてから、もう一度お試しください。";
+  if (err?.code === "42501" || /row-level security|permission/i.test(message)) return "試合の登録・変更は管理者だけができます。";
+  if (/fetch|network/i.test(message)) return "インターネットにつながっていません。電波の良い場所でもう一度保存してください。";
+  return "保存できませんでした。時間をおいてもう一度お試しください。";
+}
+
+/** 試合を追加（id が null）または更新。新しい試合は最後の番号の次になります */
+export async function saveGame(unitId: string, id: string | null, gameNo: number, input: GameInput): Promise<GameSaveResult> {
+  const supabase = createClient();
+  const values = {
+    start_time: input.start || null,
+    opponent: input.opponent.trim() || null,
+    note: input.note.trim() || null,
+  };
+  const { data, error } = id
+    ? await supabase.from("games").update(values).eq("id", id).select("id,game_no,start_time,opponent,note").single()
+    : await supabase
+        .from("games")
+        .insert({ unit_id: unitId, game_no: gameNo, ...values })
+        .select("id,game_no,start_time,opponent,note")
+        .single();
+  if (error || !data) return { ok: false, message: explainGame(error) };
+  const row = data as { id: string; game_no: number; start_time: string | null; opponent: string | null; note: string | null };
+  return {
+    ok: true,
+    game: {
+      id: row.id,
+      no: row.game_no,
+      start: row.start_time ? row.start_time.slice(0, 5) : undefined,
+      opponent: row.opponent ?? undefined,
+      note: row.note ?? undefined,
+    },
+  };
+}
+
+/** 試合を削除（後ろの試合の番号は自動で詰めます） */
+export async function deleteGame(id: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("delete_game", { p_game_id: id });
+  return error ? { ok: false, message: explainGame(error) } : { ok: true };
+}

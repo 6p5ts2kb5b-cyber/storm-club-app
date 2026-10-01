@@ -7,6 +7,16 @@
 import { DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
 import type { Ground } from "./grounds";
 
+/** 1つの試合 */
+export interface Game {
+  id?: string;
+  no: number;
+  /** 試合開始時間 "09:00"（未定なら空） */
+  start?: string;
+  opponent?: string;
+  note?: string;
+}
+
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
 export type Level = "ok" | "warn" | "ng" | "none";
 
@@ -44,7 +54,7 @@ export interface UnitSummary {
   umpireNeeded: number;
   umpireAssigned: number;
   umpireGatherTime?: string;
-  games: { no: number; start?: string }[];
+  games: Game[];
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }

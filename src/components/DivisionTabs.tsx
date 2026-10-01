@@ -5,6 +5,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CoachPanel from "@/components/CoachPanel";
+import GamePanel from "@/components/GamePanel";
 import GroundPanel from "@/components/GroundPanel";
 import PlayerGatherPanel from "@/components/PlayerGatherPanel";
 import UmpireNeedPicker from "@/components/UmpireNeedPicker";
@@ -14,11 +15,11 @@ import { saveUmpireNeed, savePlayerGather, setCoach } from "@/lib/activity-actio
 import type { StaffOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
-import type { UnitSummary } from "@/lib/status";
+import type { Game, UnitSummary } from "@/lib/status";
 
 const SECTIONS = [
   { no: 1, title: "基本情報", note: "右上の「編集」から変更" },
-  { no: 2, title: "試合情報", note: "STEP9で入力可能に" },
+  { no: 2, title: "試合情報", note: "上で入力" },
   { no: 3, title: "グラウンド", note: "上で入力" },
   { no: 4, title: "選手集合", note: "上で入力" },
   { no: 5, title: "指導者", note: "上で入力" },
@@ -56,6 +57,11 @@ export default function DivisionTabs({
   /** いま表示している区分の内容だけを書き換える */
   function patchActive(patch: Partial<UnitSummary>) {
     setUnits((list) => list.map((u, i) => (i === active ? { ...u, ...patch } : u)));
+  }
+
+  function changeGames(next: Game[]) {
+    patchActive({ games: [...next].sort((a, b) => a.no - b.no) });
+    if (!demo) router.refresh();
   }
 
   function changeGrounds(next: Ground[]) {
@@ -147,6 +153,20 @@ export default function DivisionTabs({
       )}
 
       {unit && <UnitCard unit={unit} />}
+
+      {unit && (
+        <div className="detail-block">
+          <GamePanel
+            key={`games-${unit.division}`}
+            unitId={unit.id}
+            games={unit.games}
+            canEdit={isAdmin}
+            demo={demo}
+            onChange={changeGames}
+            notify={showToast}
+          />
+        </div>
+      )}
 
       {unit && (
         <div className="detail-block">
