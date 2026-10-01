@@ -39,7 +39,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth");
+  const isPublic =
+    path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/privacy") || path.startsWith("/terms");
 
   /** ログイン状態のクッキーを引き継いだまま別の画面へ移動させる */
   const redirectTo = (target: string) => {
@@ -56,6 +57,9 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     return isPublic ? response : redirectTo("/login");
   }
+
+  // プライバシーポリシー・利用規約は、だれでも見られる
+  if (path.startsWith("/privacy") || path.startsWith("/terms")) return response;
 
   // ログイン済み → スタッフマスターに登録されているか確認
   const { data: isStaff, error } = await supabase.rpc("is_staff");

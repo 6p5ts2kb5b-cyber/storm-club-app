@@ -88,7 +88,7 @@ export default function AppNav() {
   const pathname = usePathname() ?? "/";
 
   // ログイン画面ではメニューを出さない
-  if (pathname.startsWith("/login")) return null;
+  if (pathname.startsWith("/login") || pathname.startsWith("/privacy") || pathname.startsWith("/terms")) return null;
 
   return (
     <nav className="app-nav" aria-label="メインメニュー">

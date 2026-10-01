@@ -2370,3 +2370,36 @@ h1, h2, h3, p {
     grid-column: auto;
   }
 }
+
+/* ---------- プライバシーポリシー・利用規約 ---------- */
+.doc-page {
+  max-width: 720px;
+  padding-bottom: 40px;
+}
+
+.doc-page h2 {
+  margin: 24px 0 8px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.doc-page p,
+.doc-page li {
+  line-height: 1.8;
+}
+
+.doc-back {
+  margin-top: 32px;
+}
+
+.doc-back a,
+.login__links a {
+  color: var(--top);
+  font-weight: 700;
+}
+
+.login__links {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}

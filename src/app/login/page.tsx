@@ -33,6 +33,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             ? "STORMクラブのスタッフとして登録されたGoogleアカウントだけが利用できます。"
             : "ログイン機能は準備中です（管理者がSupabaseの設定を終えると使えるようになります）。"}
         </p>
+        <p className="login__links">
+          <a href="/privacy">プライバシーポリシー</a>・<a href="/terms">利用規約</a>
+        </p>
       </div>
     </div>
   );
