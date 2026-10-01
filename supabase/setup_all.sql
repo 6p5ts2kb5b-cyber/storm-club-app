@@ -8,7 +8,6 @@
 -- 中身は supabase/migrations/0001〜0006 を順番につなげたものです。
 -- ============================================================
 
-
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
 -- ============================================================
 -- STORMクラブ運営アプリ データベース準備 その1：スタッフマスターとログインの許可
@@ -451,5 +450,41 @@ drop policy if exists people_update on public.umpire_people;
 create policy people_update on public.umpire_people for update to authenticated using (public.is_admin()) with check (public.is_admin());
 drop policy if exists people_delete on public.umpire_people;
 create policy people_delete on public.umpire_people for delete to authenticated using (public.is_admin());
+
+-- >>>>>>>>>> 0007_grants.sql >>>>>>>>>>
+-- ============================================================
+-- STORMクラブ運営アプリ データベース準備 その7：アプリからの読み書きの許可
+--
+-- Supabaseの「Automatically expose new tables」がオフでも動くように、
+-- ログインした人（authenticated）にだけ表の読み書きを許可します。
+-- 実際に「誰が何をできるか」は、各表の行レベルセキュリティ（RLS）で細かく守られています。
+-- ログインしていない人（anon）には何も許可しません。
+-- ============================================================
+
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete on
+  public.staff,
+  public.activity_days,
+  public.activity_units,
+  public.grounds,
+  public.coach_assignments,
+  public.games,
+  public.umpire_slots,
+  public.umpire_people
+to authenticated;
+
+revoke all on
+  public.staff,
+  public.activity_days,
+  public.activity_units,
+  public.grounds,
+  public.coach_assignments,
+  public.games,
+  public.umpire_slots,
+  public.umpire_people
+from anon;
+
+grant execute on function public.delete_game(uuid) to authenticated;
 
 select '✅ データベースの準備が完了しました' as "結果";
