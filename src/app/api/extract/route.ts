@@ -35,6 +35,19 @@ function geminiMime(type: string, name: string): string | null {
   return null;
 }
 
+/** 順番に試すモデル（無料で使えるもの） */
+const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+
+/** Google から返ってきたエラー文の要点だけを取り出す */
+function googleMessage(detail: string): string {
+  try {
+    const m = (JSON.parse(detail) as { error?: { message?: string } }).error?.message ?? "";
+    return m.split("\n")[0].slice(0, 120);
+  } catch {
+    return "";
+  }
+}
+
 const fail = (message: string, status = 400) => NextResponse.json({ ok: false, message }, { status });
 
 export async function POST(request: Request) {
@@ -75,32 +88,54 @@ export async function POST(request: Request) {
   }
   if (parts.length === 1) return fail("写真・PDF・音声を選ぶか、文章を貼り付けてください。");
 
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
-  let res: Response;
-  try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          response_mime_type: "application/json",
-          response_schema: RESPONSE_SCHEMA,
-          temperature: 0.1,
-        },
-      }),
-    });
-  } catch {
-    return fail("読み取りサービスにつながりませんでした。少し待ってから、もう一度お試しください。", 502);
+  // 混んでいる・モデルが見つからないときは、別のモデルで自動でやり直す
+  const models = [...new Set([process.env.GEMINI_MODEL, ...FALLBACK_MODELS].filter((m): m is string => Boolean(m)))];
+  const body = JSON.stringify({
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      response_mime_type: "application/json",
+      response_schema: RESPONSE_SCHEMA,
+      temperature: 0.1,
+    },
+  });
+  const started = Date.now();
+
+  let res: Response | null = null;
+  let status = 0;
+  let detail = "";
+  for (const model of models) {
+    if (Date.now() - started > 40_000) break; // 時間切れ（60秒）にならないように
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body,
+      });
+    } catch {
+      res = null;
+      status = 0;
+      detail = "network";
+      continue;
+    }
+    if (res.ok) break;
+    status = res.status;
+    detail = await res.text().catch(() => "");
+    console.error("Gemini error", model, status, detail.slice(0, 500));
+    // 鍵の間違い・ファイルの問題・回数制限は、モデルを変えても同じなので止める
+    if (status === 400 || status === 401 || status === 403) break;
+    if (status === 429 && !/model|not available|limit: 0/i.test(detail)) break;
+    res = null;
   }
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("Gemini error", res.status, detail.slice(0, 500));
-    if (res.status === 429) return fail("今日の無料の読み取り回数に達したか、短い時間に使いすぎました。しばらく待ってから、もう一度お試しください。", 429);
-    if (res.status === 400 && /API key/i.test(detail)) return fail("Gemini の鍵が正しくありません。Vercel に登録した GEMINI_API_KEY を確認してください。", 502);
-    if (res.status === 400) return fail("このファイルは読み取れませんでした。写真ならピントが合ったもの、音声ならm4a・mp3の形式でお試しください。", 400);
-    return fail("読み取りに失敗しました。少し待ってから、もう一度お試しください。", 502);
+  if (!res || !res.ok) {
+    const reason = googleMessage(detail);
+    const tail = status ? `\n（くわしい原因：${status}${reason ? ` ${reason}` : ""}）` : "";
+    if (status === 0) return fail("読み取りサービスにつながりませんでした。少し待ってから、もう一度お試しください。", 502);
+    if (/API key|API_KEY/i.test(detail)) return fail("Gemini の鍵が正しくありません。Vercel に登録した GEMINI_API_KEY を確認してください。" + tail, 502);
+    if (status === 403) return fail("Gemini の鍵が使えない状態です。Google AI Studio で鍵が有効か確認してください。" + tail, 502);
+    if (status === 429) return fail("今日の無料の読み取り回数に達したか、短い時間に使いすぎました。しばらく待ってから、もう一度お試しください。" + tail, 429);
+    if (status === 400) return fail("このファイルは読み取れませんでした。写真ならピントが合ったもの、音声ならm4a・mp3の形式でお試しください。" + tail, 400);
+    return fail("読み取りサービスが混み合っています。1〜2分待ってから、もう一度お試しください。" + tail, 502);
   }
 
   const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };

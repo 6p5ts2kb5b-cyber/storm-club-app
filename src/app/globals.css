@@ -718,6 +718,8 @@ button {
 }
 
 .form-error {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
   margin-bottom: 10px;
   padding: 12px 14px;
   border-left: 4px solid var(--stop);
