@@ -22,7 +22,7 @@ export default async function CalendarPage() {
         <h1 className="page-head__title">カレンダー</h1>
       </header>
       {!isSupabaseConfigured && <SampleBanner />}
-      {!result.ok && <p className="form-error">🔴 {result.message}</p>}
+      {!result.ok && <p className="form-error">{result.message}</p>}
       <MonthCalendar today={todayInTokyo()} marks={marks} />
     </div>
   );

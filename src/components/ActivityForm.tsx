@@ -208,7 +208,7 @@ export default function ActivityForm({
 
         {error && (
           <p className="form-error" role="alert">
-            🔴 {error}
+            {error}
           </p>
         )}
 

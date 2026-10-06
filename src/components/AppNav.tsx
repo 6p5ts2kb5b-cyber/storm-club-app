@@ -93,8 +93,8 @@ export default function AppNav() {
   return (
     <nav className="app-nav" aria-label="メインメニュー">
       <div className="app-nav__brand">
-        <span className="brand-mark" aria-hidden="true">S</span>
-        <span className="app-nav__brand-text">STORMクラブ</span>
+        <span className="wordmark">STORM</span>
+        <span className="app-nav__brand-text">運営管理</span>
       </div>
       <ul className="app-nav__list">
         {NAV.map((item) => {

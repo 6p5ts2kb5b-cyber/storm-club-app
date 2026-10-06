@@ -17,12 +17,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <div className="login">
       <div className="login__card">
         <span className="brand-mark brand-mark--lg" aria-hidden="true">S</span>
-        <h1 className="login__title">STORMクラブ</h1>
-        <p className="login__sub">運営管理アプリ</p>
+        <h1 className="login__title">STORM</h1>
+        <p className="login__sub">STORMクラブ 運営管理</p>
 
         {errorMessage && (
           <p className="login__error" role="alert">
-            🔴 {errorMessage}
+            {errorMessage}
           </p>
         )}
 

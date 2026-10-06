@@ -351,7 +351,7 @@ export default function StaffManager({
 
             {formError && (
               <p className="form-error" role="alert">
-                🔴 {formError}
+                {formError}
               </p>
             )}
 

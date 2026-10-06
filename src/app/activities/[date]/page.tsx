@@ -1,9 +1,10 @@
 import Link from "next/link";
 import ActivityFormButton from "@/components/ActivityFormButton";
+import BigDate from "@/components/BigDate";
 import DivisionTabs from "@/components/DivisionTabs";
 import SampleBanner from "@/components/SampleBanner";
 import { currentRole, loadDay, loadStaffOptions } from "@/lib/data";
-import { autoModeForDate, formatDateLong } from "@/lib/divisions";
+import { autoModeForDate } from "@/lib/divisions";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
@@ -23,26 +24,28 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="page">
-      <Link href="/activities" className="back-link">‹ 活動一覧</Link>
-      <header className="page-head page-head--row">
-        <div>
-          <h1 className="page-head__title">{valid ? formatDateLong(date) : "活動日"}</h1>
-          {day && (
-            <p className="page-head__sub">
-              {day.activityType || "活動内容 未設定"}
-              {day.note ? `　・　${day.note}` : ""}
-            </p>
+      <header className="dayhead">
+        <Link href="/activities" className="back-link">
+          ‹ 活動一覧
+        </Link>
+        <div className="dayhead__row">
+          <h1>{valid ? <BigDate date={date} size="xl" /> : "活動日"}</h1>
+          {day && isAdmin && (
+            <ActivityFormButton label="編集" className="btn" day={day} defaultDate={date} demo={demo} />
           )}
         </div>
-        {day && isAdmin && (
-          <ActivityFormButton label="編集" className="btn" day={day} defaultDate={date} demo={demo} />
+        {day && (
+          <p className="dayhead__meta">
+            {day.activityType || "活動内容 未設定"}
+            {day.note ? `　${day.note}` : ""}
+          </p>
         )}
       </header>
       {demo && <SampleBanner />}
 
       {result && !result.ok ? (
         <div className="empty">
-          <p>🔴 {result.message}</p>
+          <p className="form-error">{result.message}</p>
         </div>
       ) : day ? (
         <DivisionTabs key={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} />

@@ -1,4 +1,3 @@
-import ComingSoon from "@/components/ComingSoon";
 import LogoutButton from "@/components/LogoutButton";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getCurrentStaff } from "@/lib/supabase/server";
@@ -43,15 +42,13 @@ export default async function SettingsPage() {
         )}
       </section>
 
-      <ComingSoon
-        step="STEP5・11"
-        title="アプリの設定"
-        items={[
-          "審判は試合開始の何分前集合か（初期値：60分前）（STEP11）",
-          "12月〜4月をトップ・アカデミーにする自動判定（STEP5）",
-        ]}
-      />
-      <p className="version">STORMクラブ運営アプリ v0.2（STEP2）</p>
+      <section className="panel settings-note">
+        <h2 className="panel__title">活動ごとの設定</h2>
+        <p className="muted">
+          審判の「何分前に集合するか」と、トップ・アカデミーかSTORMクラブかの区分は、活動日ごとに決められます。活動日の画面から変更してください。
+        </p>
+      </section>
+      <p className="version">STORMクラブ 運営管理 v1.0</p>
     </div>
   );
 }

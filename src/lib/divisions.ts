@@ -88,3 +88,13 @@ export function formatTime(time?: string | null): string {
   const [h, m] = time.split(":");
   return `${Number(h)}:${m}`;
 }
+
+/** "2026-12-05" → "土" */
+export function weekdayLabel(isoDate: string): string {
+  return ["日", "月", "火", "水", "木", "金", "土"][weekdayIndex(isoDate)];
+}
+
+/** "2026-12-05" → { month: 12, day: 5 } */
+export function monthDay(isoDate: string): { month: number; day: number } {
+  return { month: Number(isoDate.slice(5, 7)), day: Number(isoDate.slice(8, 10)) };
+}

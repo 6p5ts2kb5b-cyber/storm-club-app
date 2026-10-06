@@ -15,19 +15,28 @@ import { savePlayerGather, setCoach } from "@/lib/activity-actions";
 import type { StaffOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
-import type { Game, UnitSummary } from "@/lib/status";
+import Lamp from "@/components/Lamp";
+import { checkUnit, type Game, type Level, type UnitSummary, worstLevel } from "@/lib/status";
 import { deriveUmpire } from "@/lib/umpire";
 
-const SECTIONS = [
-  { no: 1, title: "基本情報", note: "右上の「編集」から変更" },
-  { no: 2, title: "試合情報", note: "上で入力" },
-  { no: 3, title: "グラウンド", note: "上で入力" },
-  { no: 4, title: "選手集合", note: "上で入力" },
-  { no: 5, title: "指導者", note: "上で入力" },
-  { no: 6, title: "審判", note: "上で入力（必要人数・試合ごとの枠）" },
-  { no: 7, title: "審判集合", note: "上で入力（自動計算＋手動修正）" },
-  { no: 8, title: "メモ", note: "右上の「編集」から変更" },
-];
+/** 各欄の状態（ジャンプ用のバーに出すランプ） */
+function sectionLevels(u: UnitSummary): { id: string; label: string; level: Level }[] {
+  const items = checkUnit(u);
+  const lv = (key: string): Level => items.find((i) => i.key === key)?.level ?? "none";
+  const worst = (...ls: Level[]): Level =>
+    ls.includes("ng") ? "ng" : ls.includes("warn") ? "warn" : ls.every((l) => l === "none") ? "none" : "ok";
+  const games: Level = u.games.length === 0 ? "none" : u.games.some((g) => !g.start) ? "ng" : "ok";
+  const umpire: Level = u.umpireRequired
+    ? worst(lv("umpire"), lv("umpireGather"), u.openPositions.length ? "ng" : "ok")
+    : "none";
+  return [
+    { id: "sec-games", label: "試合", level: games },
+    { id: "sec-ground", label: "グラウンド", level: lv("ground") },
+    { id: "sec-gather", label: "選手集合", level: lv("player") },
+    { id: "sec-coach", label: "指導者", level: lv("coach") },
+    { id: "sec-umpire", label: "審判", level: umpire },
+  ];
+}
 
 export default function DivisionTabs({
   units: initialUnits,
@@ -136,16 +145,32 @@ export default function DivisionTabs({
               className={`seg__btn seg__btn--${u.division}${i === active ? " is-active" : ""}`}
               onClick={() => setActive(i)}
             >
+              <Lamp level={worstLevel(u)} />
               {DIVISION_LABEL[u.division]}
             </button>
           ))}
         </div>
       )}
 
-      {unit && <UnitCard unit={unit} />}
+      {unit && (
+        <nav className="jumpbar" aria-label="この日の入力欄へ移動">
+          {sectionLevels(unit).map((sec) => (
+            <a key={sec.id} href={`#${sec.id}`} className={`jump jump--${sec.level}`}>
+              <Lamp level={sec.level} />
+              {sec.label}
+            </a>
+          ))}
+        </nav>
+      )}
 
       {unit && (
-        <div className="detail-block">
+        <div className="detail-board">
+          <UnitCard unit={unit} />
+        </div>
+      )}
+
+      {unit && (
+        <div className="detail-block" id="sec-games">
           <GamePanel
             key={`games-${unit.division}`}
             unitId={unit.id}
@@ -159,7 +184,7 @@ export default function DivisionTabs({
       )}
 
       {unit && (
-        <div className="detail-block">
+        <div className="detail-block" id="sec-ground">
           <GroundPanel
             key={unit.division}
             unitId={unit.id}
@@ -173,7 +198,7 @@ export default function DivisionTabs({
       )}
 
       {unit && (
-        <div className="detail-block">
+        <div className="detail-block" id="sec-gather">
           <PlayerGatherPanel
             key={`gather-${unit.division}`}
             time={unit.playerGatherTime}
@@ -185,7 +210,7 @@ export default function DivisionTabs({
       )}
 
       {unit && (
-        <div className="detail-block">
+        <div className="detail-block" id="sec-coach">
           <CoachPanel
             staff={staff}
             selectedIds={unit.coachIds ?? []}
@@ -197,7 +222,7 @@ export default function DivisionTabs({
       )}
 
       {unit && (
-        <div className="detail-block">
+        <div className="detail-block" id="sec-umpire">
           <UmpireSection
             key={`ump-${unit.division}`}
             unit={unit}
@@ -211,15 +236,6 @@ export default function DivisionTabs({
         </div>
       )}
 
-      <ol className="section-list">
-        {SECTIONS.map((s) => (
-          <li key={s.no} className="section-list__item">
-            <span className="section-list__no">{s.no}</span>
-            <span className="section-list__title">{s.title}</span>
-            <span className="section-list__step">{s.note}</span>
-          </li>
-        ))}
-      </ol>
 
       {toastEl}
     </div>

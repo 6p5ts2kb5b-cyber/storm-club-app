@@ -124,9 +124,7 @@ export default function GamePanel({
                   {g.note && <span className="game__note">{g.note}</span>}
                 </span>
                 {canEdit && (
-                  <span className="issue__chev" aria-hidden="true">
-                    ›
-                  </span>
+                  <span className="issue__chev" aria-hidden="true" />
                 )}
               </button>
             </li>
@@ -186,7 +184,7 @@ export default function GamePanel({
 
             {error && (
               <p className="form-error" role="alert">
-                🔴 {error}
+                {error}
               </p>
             )}
 

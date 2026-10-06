@@ -1,6 +1,7 @@
 "use client";
 
 // グラウンド管理：候補校の一覧・追加・編集・使用決定
+import Lamp from "@/components/Lamp";
 import { useState } from "react";
 import { deleteGround, saveGround, validateGround } from "@/lib/ground-actions";
 import {
@@ -129,7 +130,10 @@ export default function GroundPanel({
       </div>
 
       {grounds.length === 0 ? (
-        <p className="muted ground-empty">🔴 まだ候補がありません。</p>
+        <p className="ground-empty">
+          <Lamp level="ng" />
+          まだ候補がありません。下のボタンから登録してください。
+        </p>
       ) : (
         <ul className="ground-list">
           {grounds.map((g) => (
@@ -285,7 +289,7 @@ export default function GroundPanel({
 
             {formError && (
               <p className="form-error" role="alert">
-                🔴 {formError}
+                {formError}
               </p>
             )}
 

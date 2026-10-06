@@ -2,6 +2,7 @@
 
 // 試合ごとの審判の枠（1〜4人制）
 // 枠をタップ → スタッフ または「相手チーム」を選ぶ。空いている枠は赤で表示。
+import Lamp from "@/components/Lamp";
 import { useState } from "react";
 import type { StaffOption } from "@/lib/data";
 import { formatTime } from "@/lib/divisions";
@@ -71,7 +72,8 @@ export default function UmpireSlots({
             <div className="slot-game__head">
               <span className="game__no">第{g.no}試合</span>
               <span className="slot-game__time">{g.start ? formatTime(g.start) : "時間未定"}</span>
-              <span className={`slot-game__state${open ? " is-ng" : " is-ok"}`}>{open ? `🔴 空き${open}` : "🟢 全員決定"}</span>
+              <span className={`slot-game__state${open ? " is-ng" : " is-ok"}`}><Lamp level={open ? "ng" : "ok"} />
+                {open ? `空き ${open}` : "全員決定"}</span>
             </div>
 
             <div className="system-row" role="radiogroup" aria-label={`第${g.no}試合の人数制`}>

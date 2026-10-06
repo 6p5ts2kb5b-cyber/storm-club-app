@@ -66,7 +66,7 @@ export default function UmpireNeedPicker({
           </div>
           <div className={short > 0 ? "is-ng" : "is-ok"}>
             <span className="need-summary__label">不足</span>
-            <span className="need-summary__num">{short > 0 ? `あと${short}名` : "🟢 確定"}</span>
+            <span className="need-summary__num">{short > 0 ? `あと${short}名` : "確定"}</span>
           </div>
         </div>
       ) : (

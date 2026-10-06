@@ -86,7 +86,7 @@ const SLOTS_1205_ACA = [slot("sample-game6", "plate", "相手"), slot("sample-ga
 
 export const SAMPLE_DAYS: DaySummary[] = [
   {
-    date: "2026-10-03",
+    date: "2026-10-10",
     mode: "single",
     activityType: "練習試合",
     units: [
@@ -109,7 +109,7 @@ export const SAMPLE_DAYS: DaySummary[] = [
     ],
   },
   {
-    date: "2026-10-10",
+    date: "2026-10-17",
     mode: "single",
     activityType: "練習",
     units: [

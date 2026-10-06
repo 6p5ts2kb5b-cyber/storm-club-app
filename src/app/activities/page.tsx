@@ -1,9 +1,11 @@
 import Link from "next/link";
 import ActivityFormButton from "@/components/ActivityFormButton";
+import BigDate from "@/components/BigDate";
+import Lamp from "@/components/Lamp";
 import SampleBanner from "@/components/SampleBanner";
 import { currentIsAdmin, loadDays } from "@/lib/data";
-import { DIVISION_LABEL, formatDateLong, todayInTokyo } from "@/lib/divisions";
-import { LEVEL_EMOJI, worstLevel } from "@/lib/status";
+import { DIVISION_LABEL, todayInTokyo } from "@/lib/divisions";
+import { worstLevel } from "@/lib/status";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
@@ -20,18 +22,19 @@ export default async function ActivitiesPage() {
   const row = (d: (typeof days)[number]) => (
     <li key={d.date}>
       <Link href={`/activities/${d.date}`} className="list-row">
+        <BigDate date={d.date} size="sm" />
         <span className="list-row__main">
-          <span className="list-row__title">{formatDateLong(d.date)}</span>
-          <span className="list-row__sub">{d.activityType || "活動内容 未設定"}</span>
+          <span className="list-row__title">{d.activityType || "活動内容 未設定"}</span>
+          <span className="list-row__tags">
+            {d.units.map((u) => (
+              <span key={u.division} className="unit-state">
+                <Lamp level={worstLevel(u)} labelled />
+                {DIVISION_LABEL[u.division]}
+              </span>
+            ))}
+          </span>
         </span>
-        <span className="list-row__tags">
-          {d.units.map((u) => (
-            <span key={u.division} className={`div-tag div-tag--${u.division}`}>
-              {LEVEL_EMOJI[worstLevel(u)]} {DIVISION_LABEL[u.division]}
-            </span>
-          ))}
-        </span>
-        <span className="issue__chev" aria-hidden="true">›</span>
+        <span className="issue__chev" aria-hidden="true" />
       </Link>
     </li>
   );
@@ -46,11 +49,11 @@ export default async function ActivitiesPage() {
 
       {!result.ok ? (
         <div className="empty">
-          <p>🔴 {result.message}</p>
+          <p className="form-error">{result.message}</p>
         </div>
       ) : days.length === 0 ? (
         <div className="empty">
-          <p>まだ活動日が登録されていません。</p>
+          <p className="empty__title">まだ活動日が登録されていません</p>
           {isAdmin && <p className="muted">右上の「＋ 活動日を追加」から登録してください。</p>}
         </div>
       ) : (

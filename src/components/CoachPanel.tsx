@@ -1,6 +1,7 @@
 "use client";
 
 // 指導者：スタッフマスターから、名前の大きなボタンをタップして参加／取り消し
+import Lamp from "@/components/Lamp";
 import type { StaffOption } from "@/lib/data";
 
 export default function CoachPanel({
@@ -32,7 +33,10 @@ export default function CoachPanel({
       {count > 0 ? (
         <p className="coach-names">{selectedNames.join("・")}</p>
       ) : (
-        <p className="coach-names coach-names--ng">🔴 まだ誰も決まっていません</p>
+        <p className="coach-names coach-names--ng">
+          <Lamp level="ng" />
+          まだ誰も決まっていません
+        </p>
       )}
 
       {options.length === 0 ? (

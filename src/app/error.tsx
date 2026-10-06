@@ -5,7 +5,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
     <div className="page">
       <div className="empty">
-        <p>🔴 画面の表示中に問題が起きました。</p>
+        <p className="empty__title">画面を表示できませんでした</p>
         <p className="muted">
           インターネットの接続を確認して「もう一度読み込む」を押してください。何度も続く場合は、下の番号を管理者に伝えてください。
         </p>

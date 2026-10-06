@@ -21,7 +21,7 @@ export function useToast(): [React.ReactNode, (kind: "ok" | "ng", text: string) 
 
   const el = toast ? (
     <div className={`toast toast--${toast.kind}`} role="status">
-      {toast.kind === "ok" ? "✓ " : "🔴 "}
+      <span className="toast__lamp" aria-hidden="true" />
       {toast.text}
     </div>
   ) : null;

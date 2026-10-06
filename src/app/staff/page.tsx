@@ -16,7 +16,7 @@ export default async function StaffPage() {
           <h1 className="page-head__title">スタッフ</h1>
         </header>
         <p className="sample-banner" role="note">
-          お試しモードです。追加・変更はこの画面の中だけで、保存はされません（STEP2の設定後に本物のデータになります）。
+          お試しモード：追加・変更は保存されません。
         </p>
         <StaffManager initial={SAMPLE_STAFF} isAdmin demo />
       </div>
@@ -36,7 +36,7 @@ export default async function StaffPage() {
       </header>
       {error ? (
         <div className="empty">
-          <p>🔴 スタッフの一覧を読み込めませんでした。</p>
+          <p className="empty__title">スタッフの一覧を読み込めませんでした</p>
           <p className="muted">インターネットの接続を確認して、画面を下に引っぱって再読み込みしてください。</p>
         </div>
       ) : (
