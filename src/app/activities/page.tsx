@@ -43,7 +43,14 @@ export default async function ActivitiesPage() {
     <div className="page">
       <header className="page-head page-head--row">
         <h1 className="page-head__title">活動一覧</h1>
-        {isAdmin && <ActivityFormButton label="＋ 活動日を追加" defaultDate={today} demo={demo} />}
+        {isAdmin && (
+          <div className="page-head__actions">
+            <Link href="/import" className="btn">
+              読み取って登録
+            </Link>
+            <ActivityFormButton label="＋ 追加" defaultDate={today} demo={demo} />
+          </div>
+        )}
       </header>
       {demo && <SampleBanner />}
 
