@@ -487,4 +487,20 @@ from anon;
 
 grant execute on function public.delete_game(uuid) to authenticated;
 
+-- >>>>>>>>>> 0008_rosters.sql >>>>>>>>>>
+-- ============================================================
+-- STORMクラブ運営アプリ データベース準備 その8：名簿を分ける
+--
+--   ログイン名簿 … メールアドレスがある人（その Google アカウントでログインできる）
+--   審判名簿・指導者名簿 … ログインしない人も、名前だけで登録できる
+--
+-- メールアドレスを「空でもよい」に変えるだけです。
+-- 何度実行しても壊れません。
+-- ============================================================
+
+alter table public.staff alter column email drop not null;
+
+-- 空文字のメールアドレスは「なし」として扱う
+update public.staff set email = null where email is not null and btrim(email) = '';
+
 select '✅ データベースの準備が完了しました' as "結果";

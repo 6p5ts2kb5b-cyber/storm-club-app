@@ -1,5 +1,5 @@
 // スタッフマスター画面
-import StaffManager from "@/components/StaffManager";
+import Rosters from "@/components/Rosters";
 import type { Staff } from "@/lib/staff";
 import { SAMPLE_STAFF } from "@/lib/staff";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -13,12 +13,12 @@ export default async function StaffPage() {
     return (
       <div className="page">
         <header className="page-head">
-          <h1 className="page-head__title">スタッフ</h1>
+          <h1 className="page-head__title">名簿</h1>
         </header>
         <p className="sample-banner" role="note">
           お試しモード：追加・変更は保存されません。
         </p>
-        <StaffManager initial={SAMPLE_STAFF} isAdmin demo />
+        <Rosters initial={SAMPLE_STAFF} isAdmin demo />
       </div>
     );
   }
@@ -32,7 +32,7 @@ export default async function StaffPage() {
   return (
     <div className="page">
       <header className="page-head">
-        <h1 className="page-head__title">スタッフ</h1>
+        <h1 className="page-head__title">名簿</h1>
       </header>
       {error ? (
         <div className="empty">
@@ -40,7 +40,7 @@ export default async function StaffPage() {
           <p className="muted">インターネットの接続を確認して、画面を下に引っぱって再読み込みしてください。</p>
         </div>
       ) : (
-        <StaffManager initial={(data ?? []) as Staff[]} isAdmin={me?.role === "admin"} />
+        <Rosters initial={(data ?? []) as Staff[]} isAdmin={me?.role === "admin"} />
       )}
     </div>
   );

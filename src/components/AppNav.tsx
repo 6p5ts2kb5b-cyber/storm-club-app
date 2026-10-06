@@ -57,7 +57,7 @@ const NAV: NavItem[] = [
   },
   {
     href: "/staff",
-    label: "スタッフ",
+    label: "名簿",
     icon: (
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" {...stroke}>
         <circle cx="9" cy="8" r="3.5" />
