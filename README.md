@@ -30,7 +30,7 @@ STORMクラブの活動準備（グラウンド・選手集合時間・指導者
 
 - 読み取りには Google Gemini（無料枠）を使います
 - Vercel の環境変数に `GEMINI_API_KEY`（Google AI Studio で無料で作れる鍵）を登録すると使えます
-- 使うモデルを変えたいときは `GEMINI_MODEL`（初期値：`gemini-flash-latest`）
+- 使うモデルは、その時点で使える新しい「flash」を自動で選びます。固定したいときは `GEMINI_MODEL`
 - 無料枠では、送った内容がGoogleのサービス改善に使われる場合があります
 
 ## 使っている道具（かんたんな説明）

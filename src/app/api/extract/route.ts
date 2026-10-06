@@ -36,7 +36,30 @@ function geminiMime(type: string, name: string): string | null {
 }
 
 /** 順番に試すモデル（無料で使えるもの） */
-const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+const FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"];
+
+/**
+ * いま使えるモデルを Google に問い合わせて、新しい「flash」から順に返す。
+ * モデルが古くなって使えなくなっても、自動で新しいものを選べるようにするため。
+ */
+async function discoverModels(key: string): Promise<string[]> {
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: { "x-goog-api-key": key },
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { models?: { name?: string; supportedGenerationMethods?: string[] }[] };
+    const names = (json.models ?? [])
+      .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+      .map((m) => (m.name ?? "").replace(/^models\//, ""))
+      .filter((n) => /^gemini-[\d.]+-flash(-lite)?$/.test(n));
+    const ver = (n: string) => parseFloat(n.replace(/^gemini-/, "")) || 0;
+    // 新しい版を先に、同じ版なら lite でない方を先に
+    return names.sort((a, b) => ver(b) - ver(a) || Number(a.includes("lite")) - Number(b.includes("lite")));
+  } catch {
+    return [];
+  }
+}
 
 /** Google から返ってきたエラー文の要点だけを取り出す */
 function googleMessage(detail: string): string {
@@ -89,7 +112,10 @@ export async function POST(request: Request) {
   if (parts.length === 1) return fail("写真・PDF・音声を選ぶか、文章を貼り付けてください。");
 
   // 混んでいる・モデルが見つからないときは、別のモデルで自動でやり直す
-  const models = [...new Set([process.env.GEMINI_MODEL, ...FALLBACK_MODELS].filter((m): m is string => Boolean(m)))];
+  const found = await discoverModels(key);
+  const models = [
+    ...new Set([process.env.GEMINI_MODEL, ...found.slice(0, 3), ...FALLBACK_MODELS].filter((m): m is string => Boolean(m))),
+  ].slice(0, 5);
   const body = JSON.stringify({
     contents: [{ role: "user", parts }],
     generationConfig: {
@@ -118,12 +144,16 @@ export async function POST(request: Request) {
       continue;
     }
     if (res.ok) break;
-    status = res.status;
-    detail = await res.text().catch(() => "");
-    console.error("Gemini error", model, status, detail.slice(0, 500));
-    // 鍵の間違い・ファイルの問題・回数制限は、モデルを変えても同じなので止める
-    if (status === 400 || status === 401 || status === 403) break;
-    if (status === 429 && !/model|not available|limit: 0/i.test(detail)) break;
+    const text = await res.text().catch(() => "");
+    console.error("Gemini error", model, res.status, text.slice(0, 500));
+    // 「モデルが無い（404）」より、ほかの原因の方を画面に出す
+    if (res.status !== 404 || status === 0 || status === 404) {
+      status = res.status;
+      detail = text;
+    }
+    // 鍵の間違いは、モデルを変えても同じなので止める
+    if (res.status === 401 || res.status === 403 || /API key|API_KEY/i.test(text)) break;
+    if (res.status === 429 && !/limit: 0/i.test(text)) break;
     res = null;
   }
 
