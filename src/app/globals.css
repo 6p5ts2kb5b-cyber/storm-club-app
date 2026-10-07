@@ -596,6 +596,26 @@ button {
   font-size: 16px; /* 16px未満だとiPhoneで画面が勝手に拡大されるため */
 }
 
+/* iPhoneの日付・時刻の欄は、そのままだと枠からはみ出すので幅を固定する */
+input.input[type="time"],
+input.input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  height: 52px;
+  min-height: 52px;
+  line-height: 1;
+  text-align: center;
+}
+
+input.input[type="time"]::-webkit-date-and-time-value,
+input.input[type="date"]::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: center;
+}
+
 .input::placeholder {
   color: var(--ink-3);
 }
@@ -3578,7 +3598,8 @@ a.cal__cell.has-activity:hover {
   justify-self: end;
 }
 
-.draft__date .input {
+.draft__date input.input[type="date"] {
+  height: 40px;
   min-height: 40px;
   width: 150px;
   padding: 6px 10px;
@@ -3622,7 +3643,17 @@ a.cal__cell.has-activity:hover {
 }
 
 .draft-grid .field {
+  min-width: 0;
   margin-bottom: 12px;
+}
+
+.draft-grid .field__hint {
+  margin-top: 4px;
+}
+
+.draft-grid > *,
+.draft-game > * {
+  min-width: 0;
 }
 
 .input--time {
@@ -3649,16 +3680,35 @@ select.input {
 
 .draft-game {
   display: grid;
-  grid-template-columns: auto 104px 1fr auto;
+  grid-template-columns: 34px 96px minmax(0, 1fr) 36px;
   align-items: center;
   gap: 8px;
 }
 
+.draft-game input.input[type="time"] {
+  height: 46px;
+  min-height: 46px;
+  font-size: 19px;
+}
+
 .draft-game__no {
-  font-size: 12px;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  border-radius: 10px;
+  background: var(--board);
+  color: var(--bulb);
+  font-family: var(--num);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.draft-game__no small {
+  font-family: var(--sans);
+  font-size: 9px;
   font-weight: 700;
-  color: var(--ink-2);
-  white-space: nowrap;
+  opacity: 0.75;
 }
 
 .draft-game .input {

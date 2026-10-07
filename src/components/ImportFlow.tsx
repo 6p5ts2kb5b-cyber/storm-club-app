@@ -376,7 +376,7 @@ export default function ImportFlow({ existing, demo }: { existing: DaySummary[];
                       <label className="field">
                         <span className="field__label">審判集合</span>
                         <input className="input input--time" type="time" value={u.umpireGather} onChange={(e) => patch(u.key, { umpireGather: e.target.value })} />
-                        {!u.umpireGather && <span className="field__hint">空なら第1試合の60分前で自動計算</span>}
+                        {!u.umpireGather && <span className="field__hint">空なら自動（第1試合の60分前）</span>}
                       </label>
                     )}
                   </div>
@@ -385,7 +385,10 @@ export default function ImportFlow({ existing, demo }: { existing: DaySummary[];
                     <span className="field__label">試合</span>
                     {u.games.map((gm, i) => (
                       <div key={i} className="draft-game">
-                        <span className="draft-game__no">第{i + 1}試合</span>
+                        <span className="draft-game__no" aria-hidden="true">
+                          <small>第</small>
+                          {i + 1}
+                        </span>
                         <input
                           className="input input--time"
                           type="time"
