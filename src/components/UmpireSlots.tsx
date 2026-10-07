@@ -9,12 +9,14 @@ import { formatTime } from "@/lib/divisions";
 import type { Game } from "@/lib/status";
 import {
   isFilled,
+  matchupText,
   POSITION_LABEL,
   type Position,
   type Slot,
   SYSTEM_LABEL,
   SYSTEM_POSITIONS,
   systemOf,
+  umpireTeamLabel,
   type UmpireSystem,
 } from "@/lib/umpire";
 
@@ -29,6 +31,7 @@ export default function UmpireSlots({
   busyKey,
   onSetSlot,
   onSetSystem,
+  onSetAllOpponent,
 }: {
   games: Game[];
   slots: Slot[];
@@ -40,6 +43,8 @@ export default function UmpireSlots({
   busyKey: string | null;
   onSetSlot: (game: Game, position: Position, choice: SlotChoice) => void;
   onSetSystem: (game: Game, system: UmpireSystem) => void;
+  /** その試合の枠を、すべて「他チームが担当」にする */
+  onSetAllOpponent: (game: Game) => void;
 }) {
   const [picking, setPicking] = useState<{ game: Game; position: Position } | null>(null);
   const sorted = [...games].sort((a, b) => a.no - b.no);
@@ -72,6 +77,7 @@ export default function UmpireSlots({
             <div className="slot-game__head">
               <span className="game__no">第{g.no}試合</span>
               <span className="slot-game__time">{g.start ? formatTime(g.start) : "時間未定"}</span>
+              <span className="slot-game__match">{matchupText(g)}</span>
               <span className={`slot-game__state${open ? " is-ng" : " is-ok"}`}><Lamp level={open ? "ng" : "ok"} />
                 {open ? `空き ${open}` : "全員決定"}</span>
             </div>
@@ -98,7 +104,7 @@ export default function UmpireSlots({
             <div className={`slot-grid slot-grid--${positions.length}`}>
               {positions.map((pos) => {
                 const s = slots.find((x) => x.gameId === g.id && x.position === pos);
-                const label = s?.opponent ? "相手チーム" : s?.staffId ? s.staffName ?? nameOf(s.staffId) ?? "（不明）" : "空き";
+                const label = s?.opponent ? umpireTeamLabel(g) : s?.staffId ? s.staffName ?? nameOf(s.staffId) ?? "（不明）" : "空き";
                 const state = s?.opponent ? "opp" : s?.staffId ? "staff" : "open";
                 return (
                   <button
@@ -141,7 +147,17 @@ export default function UmpireSlots({
               <span className="pick-opp__icon" aria-hidden="true">
                 ⇄
               </span>
-              相手チームが担当
+              {umpireTeamLabel(picking.game)}が担当
+            </button>
+            <button
+              type="button"
+              className="btn btn--block btn--outline pick-all-opp"
+              onClick={() => {
+                onSetAllOpponent(picking.game);
+                setPicking(null);
+              }}
+            >
+              この試合は全員「{umpireTeamLabel(picking.game)}」が担当
             </button>
 
             <p className="field__label pick-label">STORMのスタッフから選ぶ</p>

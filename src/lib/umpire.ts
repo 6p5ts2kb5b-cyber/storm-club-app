@@ -57,6 +57,17 @@ export function timeMinus(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+/** 「他チームが担当」の枠に出すチーム名（未入力なら「他チーム」） */
+export function umpireTeamLabel(g: Game | undefined): string {
+  return g?.umpireTeam?.trim() || "他チーム";
+}
+
+/** 対戦カード。STORMが出る試合は「STORM vs ◯◯」、出ない試合は「A vs B」 */
+export function matchupText(g: Game): string {
+  if (g.stormPlays === false) return `${g.opponent || "未定"} vs ${g.opponent2 || "未定"}`;
+  return `STORM vs ${g.opponent || "相手未定"}`;
+}
+
 export function systemOf(g: Game): UmpireSystem {
   return (g.system ?? DEFAULT_SYSTEM) as UmpireSystem;
 }
@@ -165,9 +176,10 @@ export function buildRoster(
   const opp = active.filter((s) => s.opponent);
   if (opp.length) {
     const nos = opp.map((s) => gameById.get(s.gameId)?.no ?? 0).filter(Boolean);
+    const teams = [...new Set(opp.map((s) => umpireTeamLabel(gameById.get(s.gameId))))];
     rows.push({
       key: "opponent",
-      name: "相手チーム",
+      name: teams.join("・"),
       opponent: true,
       gameNos: nos,
       rangeText: gameRangeText(nos),

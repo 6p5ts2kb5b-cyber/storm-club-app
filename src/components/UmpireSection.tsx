@@ -20,9 +20,12 @@ import {
   OFFSET_CHOICES,
   type Position,
   type RosterRow,
+  type Slot,
   SYSTEM_POSITIONS,
+  systemOf,
   type UmpirePerson,
   timeMinus,
+  umpireTeamLabel,
   type UmpireSystem,
 } from "@/lib/umpire";
 import { savePerson, saveUnitGather, setGameSystem, setSlot } from "@/lib/umpire-actions";
@@ -89,7 +92,7 @@ export default function UmpireSection({
               : { gameId: game.id, position, opponent: true },
           ];
     onPatch({ umpireSlots: next });
-    const who = choice === null ? "空き" : "staffId" in choice ? `${nameOf(choice.staffId)}さん` : "相手チーム";
+    const who = choice === null ? "空き" : "staffId" in choice ? `${nameOf(choice.staffId)}さん` : umpireTeamLabel(game);
     if (!live) return done(`第${game.no}試合を「${who}」にしました`);
     setBusyKey(`${game.id}-${position}`);
     const r = await setSlot(game.id, position, choice);
@@ -99,6 +102,32 @@ export default function UmpireSection({
       return notify("ng", r.message);
     }
     done(`第${game.no}試合を「${who}」にしました`);
+    router.refresh();
+  }
+
+  // 試合の枠をすべて「他チームが担当」にする（3チーム以上の試合で、STORMが審判を出さない試合用）
+  async function changeAllOpponent(game: Game) {
+    if (!game.id) return;
+    const positions = SYSTEM_POSITIONS[systemOf(game)];
+    const before = slots;
+    const next = [
+      ...slots.filter((s) => s.gameId !== game.id || !positions.includes(s.position)),
+      ...positions.map((position): Slot => ({ gameId: game.id as string, position, opponent: true })),
+    ];
+    onPatch({ umpireSlots: next });
+    const label = umpireTeamLabel(game);
+    if (!live) return done(`第${game.no}試合の審判を「${label}」にしました`);
+    setBusyKey(`${game.id}-all`);
+    for (const position of positions) {
+      const r = await setSlot(game.id, position, { opponent: true });
+      if (!r.ok) {
+        setBusyKey(null);
+        onPatch({ umpireSlots: before });
+        return notify("ng", r.message);
+      }
+    }
+    setBusyKey(null);
+    done(`第${game.no}試合の審判を「${label}」にしました`);
     router.refresh();
   }
 
@@ -197,6 +226,7 @@ export default function UmpireSection({
                 canEditSystem={isAdmin}
                 busyKey={busyKey}
                 onSetSlot={changeSlot}
+                onSetAllOpponent={changeAllOpponent}
                 onSetSystem={changeSystem}
               />
             </section>

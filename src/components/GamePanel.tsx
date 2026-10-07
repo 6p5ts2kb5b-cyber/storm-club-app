@@ -6,6 +6,7 @@ import TimeField, { shiftTime } from "@/components/TimeField";
 import { deleteGame, type GameInput, saveGame } from "@/lib/activity-actions";
 import { formatTime } from "@/lib/divisions";
 import type { Game } from "@/lib/status";
+import { matchupText } from "@/lib/umpire";
 
 const MAX_GAMES = 10;
 const GAME_PRESETS = ["08:30", "09:00", "09:30", "10:00", "11:00", "13:00"];
@@ -36,13 +37,28 @@ export default function GamePanel({
     // 次の試合の開始時間は「前の試合の2時間後」を初期値にする
     const start = last?.start ? shiftTime(last.start, 120) : "";
     setError(null);
-    setEditing({ id: null, no: (last?.no ?? 0) + 1, form: { start, opponent: "", note: "" } });
+    setEditing({
+      id: null,
+      no: (last?.no ?? 0) + 1,
+      form: { start, opponent: "", stormPlays: true, opponent2: "", umpireTeam: "", note: "" },
+    });
   }
 
   function openEdit(g: Game) {
     if (!canEdit) return;
     setError(null);
-    setEditing({ id: g.id ?? null, no: g.no, form: { start: g.start ?? "", opponent: g.opponent ?? "", note: g.note ?? "" } });
+    setEditing({
+      id: g.id ?? null,
+      no: g.no,
+      form: {
+        start: g.start ?? "",
+        opponent: g.opponent ?? "",
+        stormPlays: g.stormPlays !== false,
+        opponent2: g.opponent2 ?? "",
+        umpireTeam: g.umpireTeam ?? "",
+        note: g.note ?? "",
+      },
+    });
   }
 
   async function save() {
@@ -57,6 +73,9 @@ export default function GamePanel({
         no: editing.no,
         start: editing.form.start || undefined,
         opponent: editing.form.opponent.trim() || undefined,
+        stormPlays: editing.form.stormPlays,
+        opponent2: editing.form.stormPlays ? undefined : editing.form.opponent2.trim() || undefined,
+        umpireTeam: editing.form.umpireTeam.trim() || undefined,
         note: editing.form.note.trim() || undefined,
       };
     } else {
@@ -66,7 +85,8 @@ export default function GamePanel({
         setError(result.message);
         return;
       }
-      saved = result.game;
+      // 人数制は別の画面で保存しているので、元の値を残す
+      saved = { ...result.game, system: games.find((g) => g.id === result.game.id)?.system };
     }
     setBusy(false);
 
@@ -120,7 +140,16 @@ export default function GamePanel({
                 <span className="game__no">第{g.no}試合</span>
                 <span className={`game__time${g.start ? "" : " is-empty"}`}>{g.start ? formatTime(g.start) : "時間未定"}</span>
                 <span className="game__info">
-                  {g.opponent ? <span className="game__opp">vs {g.opponent}</span> : <span className="muted">対戦相手 未定</span>}
+                  {g.stormPlays === false ? (
+                    <>
+                      <span className="game__opp">{matchupText(g)}</span>
+                      <span className="game__tag">STORMは審判のみ</span>
+                    </>
+                  ) : g.opponent ? (
+                    <span className="game__opp">vs {g.opponent}</span>
+                  ) : (
+                    <span className="muted">対戦相手 未定</span>
+                  )}
                   {g.note && <span className="game__note">{g.note}</span>}
                 </span>
                 {canEdit && (
@@ -161,14 +190,61 @@ export default function GamePanel({
               />
             </div>
 
+            <div className="field">
+              <span className="field__label">この試合は</span>
+              <div className="seg seg--2" role="radiogroup" aria-label="STORMが試合に出るか">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={editing.form.stormPlays}
+                  className={`seg__btn${editing.form.stormPlays ? " is-active" : ""}`}
+                  onClick={() => setEditing((s) => (s ? { ...s, form: { ...s.form, stormPlays: true } } : s))}
+                >
+                  STORMが出る
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!editing.form.stormPlays}
+                  className={`seg__btn${!editing.form.stormPlays ? " is-active" : ""}`}
+                  onClick={() => setEditing((s) => (s ? { ...s, form: { ...s.form, stormPlays: false } } : s))}
+                >
+                  審判だけ（他チーム同士）
+                </button>
+              </div>
+            </div>
+
             <label className="field">
-              <span className="field__label">対戦相手（任意）</span>
+              <span className="field__label">{editing.form.stormPlays ? "対戦相手（任意）" : "チームA"}</span>
               <input
                 className="input"
                 value={editing.form.opponent}
                 onChange={(e) => setEditing((s) => (s ? { ...s, form: { ...s.form, opponent: e.target.value } } : s))}
-                placeholder="例：川越ベアーズ"
+                placeholder={editing.form.stormPlays ? "例：川越ベアーズ（第1試合の負け、でもOK）" : "例：山王・入間野クラブ"}
               />
+            </label>
+
+            {!editing.form.stormPlays && (
+              <label className="field">
+                <span className="field__label">チームB</span>
+                <input
+                  className="input"
+                  value={editing.form.opponent2}
+                  onChange={(e) => setEditing((s) => (s ? { ...s, form: { ...s.form, opponent2: e.target.value } } : s))}
+                  placeholder="例：KCミドル"
+                />
+              </label>
+            )}
+
+            <label className="field">
+              <span className="field__label">審判を出す他チーム（任意）</span>
+              <input
+                className="input"
+                value={editing.form.umpireTeam}
+                onChange={(e) => setEditing((s) => (s ? { ...s, form: { ...s.form, umpireTeam: e.target.value } } : s))}
+                placeholder="例：第1試合の勝者"
+              />
+              <span className="field__hint">審判の画面で「他チームが担当」を選んだ枠に、このチーム名が出ます。</span>
             </label>
 
             <label className="field">

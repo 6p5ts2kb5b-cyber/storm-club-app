@@ -14,7 +14,14 @@ export interface Game {
   no: number;
   /** 試合開始時間 "09:00"（未定なら空） */
   start?: string;
+  /** 対戦相手（STORMが出ない試合では、一方のチーム名） */
   opponent?: string;
+  /** STORMが試合に出るか（false = 審判だけ担当する試合。未設定は出る） */
+  stormPlays?: boolean;
+  /** STORMが出ない試合の、もう一方のチーム名 */
+  opponent2?: string;
+  /** 「他チームが担当」の審判を出すチーム名（例：第1試合の勝者） */
+  umpireTeam?: string;
   /** 審判の人数制（1〜4人制。基本は4人制） */
   system?: 1 | 2 | 3 | 4;
   note?: string;

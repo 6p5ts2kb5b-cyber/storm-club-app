@@ -31,6 +31,9 @@ export interface UnitRow {
     game_no: number;
     start_time: string | null;
     opponent: string | null;
+    storm_plays: boolean | null;
+    opponent2: string | null;
+    umpire_team: string | null;
     umpire_system: number | null;
     note: string | null;
     umpire_slots?: {
@@ -56,7 +59,10 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,umpire_system,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,umpire_system,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
+
+// 0009（3チーム対応）のSQLがまだのときも、画面が真っ白にならないように、古い項目だけで読み直す
+const DAY_SELECT_OLD = DAY_SELECT.replace("storm_plays,opponent2,umpire_team,", "");
 
 const DIVISION_ORDER: Division[] = ["top", "academy", "storm"];
 
@@ -100,6 +106,9 @@ function unitToSummary(u: UnitRow): UnitSummary {
           no: g.game_no,
           start: hhmm(g.start_time),
           opponent: g.opponent ?? undefined,
+          stormPlays: g.storm_plays ?? true,
+          opponent2: g.opponent2 ?? undefined,
+          umpireTeam: g.umpire_team ?? undefined,
           system: (g.umpire_system ?? 4) as Game["system"],
           note: g.note ?? undefined,
         }),
@@ -150,7 +159,14 @@ export async function loadDays(from?: string): Promise<LoadResult<DaySummary[]>>
   const supabase = await createClient();
   let query = supabase.from("activity_days").select(DAY_SELECT).order("date");
   if (from) query = query.gte("date", from);
-  const { data, error } = await query;
+  let { data, error } = await query;
+  if (error) {
+    let old = supabase.from("activity_days").select(DAY_SELECT_OLD).order("date");
+    if (from) old = old.gte("date", from);
+    const retry = (await old) as unknown as { data: typeof data; error: typeof error };
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) return { ok: false, message: "活動日を読み込めませんでした。インターネットの接続を確認して、再読み込みしてください。" };
   return { ok: true, data: ((data ?? []) as unknown as DayRow[]).map(dayToSummary) };
 }
@@ -161,7 +177,15 @@ export async function loadDay(date: string): Promise<LoadResult<DaySummary | nul
     return { ok: true, data: SAMPLE_DAYS.find((d) => d.date === date) ?? null };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase.from("activity_days").select(DAY_SELECT).eq("date", date).maybeSingle();
+  let { data, error } = await supabase.from("activity_days").select(DAY_SELECT).eq("date", date).maybeSingle();
+  if (error) {
+    const retry = (await supabase.from("activity_days").select(DAY_SELECT_OLD).eq("date", date).maybeSingle()) as unknown as {
+      data: typeof data;
+      error: typeof error;
+    };
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) return { ok: false, message: "活動日を読み込めませんでした。インターネットの接続を確認して、再読み込みしてください。" };
   return { ok: true, data: data ? dayToSummary(data as unknown as DayRow) : null };
 }

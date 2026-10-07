@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CoachPanel from "@/components/CoachPanel";
 import GamePanel from "@/components/GamePanel";
+import LineShare from "@/components/LineShare";
 import GroundPanel from "@/components/GroundPanel";
 import PlayerGatherPanel from "@/components/PlayerGatherPanel";
 import UmpireSection from "@/components/UmpireSection";
@@ -39,12 +40,15 @@ function sectionLevels(u: UnitSummary): { id: string; label: string; level: Leve
 }
 
 export default function DivisionTabs({
+  date,
   units: initialUnits,
   staff,
   isAdmin,
   canEdit,
   demo,
 }: {
+  /** この活動日 "2026-10-11" */
+  date: string;
   units: UnitSummary[];
   /** 指導者・審判の選択肢（スタッフマスター） */
   staff: StaffOption[];
@@ -236,6 +240,11 @@ export default function DivisionTabs({
         </div>
       )}
 
+      {unit && (
+        <div className="detail-block" id="sec-line">
+          <LineShare key={`line-${unit.division}`} date={date} unit={unit} />
+        </div>
+      )}
 
       {toastEl}
     </div>

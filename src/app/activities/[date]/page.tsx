@@ -48,7 +48,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
           <p className="form-error">{result.message}</p>
         </div>
       ) : day ? (
-        <DivisionTabs key={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} />
+        <DivisionTabs key={day.date} date={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} />
       ) : (
         <div className="empty">
           <p>この日の活動はまだ登録されていません。</p>

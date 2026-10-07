@@ -2124,6 +2124,7 @@ input.input[type="date"]::-webkit-date-and-time-value {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
@@ -3753,4 +3754,64 @@ select.input {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+/* ---- 3チーム以上の試合・LINE連絡 ---- */
+.game__tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--hold-tint);
+  color: var(--hold-ink);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.slot-game__match {
+  flex: 1 1 100%;
+  order: 5;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.pick-all-opp {
+  margin: 8px 0 4px;
+}
+
+.line-note {
+  margin-bottom: 10px;
+}
+
+.line-text {
+  width: 100%;
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.line-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+
+.btn--line {
+  background: #06c755;
+  border-color: #06c755;
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn--line:hover {
+  background: #05b34c;
+}
+
+.line-reset {
+  margin-bottom: 8px;
 }
