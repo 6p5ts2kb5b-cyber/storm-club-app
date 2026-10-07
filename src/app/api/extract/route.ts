@@ -115,49 +115,78 @@ export async function POST(request: Request) {
   const found = await discoverModels(key);
   const models = [
     ...new Set([process.env.GEMINI_MODEL, ...found.slice(0, 3), ...FALLBACK_MODELS].filter((m): m is string => Boolean(m))),
-  ].slice(0, 5);
+  ].slice(0, 4);
   const body = JSON.stringify({
     contents: [{ role: "user", parts }],
     generationConfig: {
       response_mime_type: "application/json",
       response_schema: RESPONSE_SCHEMA,
       temperature: 0.1,
+      maxOutputTokens: 8192,
     },
   });
   const started = Date.now();
 
-  let res: Response | null = null;
   let status = 0;
   let detail = "";
-  for (const model of models) {
-    if (Date.now() - started > 40_000) break; // 時間切れ（60秒）にならないように
-    try {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body,
-      });
-    } catch {
-      res = null;
-      status = 0;
-      detail = "network";
-      continue;
+  let parsed: unknown = null;
+  let gotAnswer = false;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  // 無料枠はモデルごとに回数の枠が別なので、混雑・回数切れ・答えの崩れは、次のモデルで試す
+  outer: for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (Date.now() - started > 45_000) break outer; // 時間切れ（60秒）にならないように
+      let res: Response;
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body,
+        });
+      } catch {
+        status = 0;
+        detail = "network";
+        await sleep(800);
+        continue;
+      }
+
+      if (res.ok) {
+        const json = (await res.json().catch(() => null)) as {
+          candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
+        } | null;
+        const out = json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+        try {
+          parsed = JSON.parse(out.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+          gotAnswer = true;
+          break outer;
+        } catch {
+          console.error("Gemini bad JSON", model, json?.candidates?.[0]?.finishReason, out.slice(0, 200));
+          status = 599;
+          detail = `{"error":{"message":"答えの形が崩れました（${json?.candidates?.[0]?.finishReason ?? "?"}）"}}`;
+          break; // 同じモデルでの再試行はせず、次のモデルへ
+        }
+      }
+
+      const text = await res.text().catch(() => "");
+      console.error("Gemini error", model, res.status, text.slice(0, 500));
+      if (res.status !== 404 || status === 0 || status === 404) {
+        status = res.status;
+        detail = text;
+      }
+      // 鍵の間違い・ファイルの問題は、モデルを変えても同じなので止める
+      if (res.status === 401 || res.status === 403 || /API key|API_KEY/i.test(text)) break outer;
+      if (res.status === 400) break outer;
+      // 混雑（500番台）は少し待って同じモデルでもう一度
+      if (res.status >= 500 && attempt === 0) {
+        await sleep(1200);
+        continue;
+      }
+      break; // 404・429 などは次のモデルへ
     }
-    if (res.ok) break;
-    const text = await res.text().catch(() => "");
-    console.error("Gemini error", model, res.status, text.slice(0, 500));
-    // 「モデルが無い（404）」より、ほかの原因の方を画面に出す
-    if (res.status !== 404 || status === 0 || status === 404) {
-      status = res.status;
-      detail = text;
-    }
-    // 鍵の間違いは、モデルを変えても同じなので止める
-    if (res.status === 401 || res.status === 403 || /API key|API_KEY/i.test(text)) break;
-    if (res.status === 429 && !/limit: 0/i.test(text)) break;
-    res = null;
   }
 
-  if (!res || !res.ok) {
+  if (!gotAnswer) {
     const reason = googleMessage(detail);
     const tail = status ? `\n（くわしい原因：${status}${reason ? ` ${reason}` : ""}）` : "";
     if (status === 0) return fail("読み取りサービスにつながりませんでした。少し待ってから、もう一度お試しください。", 502);
@@ -165,16 +194,8 @@ export async function POST(request: Request) {
     if (status === 403) return fail("Gemini の鍵が使えない状態です。Google AI Studio で鍵が有効か確認してください。" + tail, 502);
     if (status === 429) return fail("今日の無料の読み取り回数に達したか、短い時間に使いすぎました。しばらく待ってから、もう一度お試しください。" + tail, 429);
     if (status === 400) return fail("このファイルは読み取れませんでした。写真ならピントが合ったもの、音声ならm4a・mp3の形式でお試しください。" + tail, 400);
+    if (status === 599) return fail("読み取った内容を整理できませんでした。もう一度お試しください。" + tail, 502);
     return fail("読み取りサービスが混み合っています。1〜2分待ってから、もう一度お試しください。" + tail, 502);
-  }
-
-  const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-  const out = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(out);
-  } catch {
-    return fail("読み取った内容を整理できませんでした。もう一度お試しください。", 502);
   }
 
   const result = normalize(parsed);
