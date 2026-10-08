@@ -22,4 +22,6 @@ create policy tournaments_delete on public.tournaments
 grant select, insert, delete on public.tournaments to authenticated;
 revoke all on public.tournaments from anon;
 
-insert into public.tournaments (name) values ('STORM杯・JJBF大会'), ('JJBF大会') on conflict (name) do nothing;
+insert into public.tournaments (name) values ('JJBF大会') on conflict (name) do nothing;
+
+delete from public.tournaments where name = 'STORM杯・JJBF大会';

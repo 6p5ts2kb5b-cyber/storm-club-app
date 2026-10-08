@@ -6,7 +6,7 @@ import TournamentNameChips from "@/components/TournamentNameChips";
 import type { TournamentOption } from "@/lib/data";
 import { type TournamentState } from "@/lib/status";
 
-export const DEFAULT_TOURNAMENT = "STORM杯・JJBF大会";
+export const DEFAULT_TOURNAMENT = "JJBF大会";
 
 const CHOICES: { state: TournamentState; title: string; sub: string }[] = [
   { state: "pending", title: "確認中", sub: "まだ分からない" },

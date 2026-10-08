@@ -251,10 +251,7 @@ export interface TournamentOption {
 /** 登録してある大会名（表がまだ無い場合は空） */
 export async function loadTournamentNames(): Promise<TournamentOption[]> {
   if (!isSupabaseConfigured) {
-    return [
-      { id: "t1", name: "STORM杯・JJBF大会" },
-      { id: "t2", name: "JJBF大会" },
-    ];
+    return [{ id: "t1", name: "JJBF大会" }];
   }
   const supabase = await createClient();
   const { data, error } = await supabase.from("tournaments").select("id,name").order("created_at");
