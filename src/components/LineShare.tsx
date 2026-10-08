@@ -2,11 +2,11 @@
 
 // 決まっている内容をLINEの連絡文にして、そのまま送る／コピーする
 import { useMemo, useState } from "react";
-import { buildLineMessage, lineShareUrl } from "@/lib/line-text";
+import { buildLineMessage, buildReserveNotice, lineShareUrl } from "@/lib/line-text";
 import type { UnitSummary } from "@/lib/status";
 
-export default function LineShare({ date, unit }: { date: string; unit: UnitSummary }) {
-  const auto = useMemo(() => buildLineMessage(date, unit), [date, unit]);
+export default function LineShare({ date, unit, kind = "main" }: { date: string; unit: UnitSummary; kind?: "main" | "reserve" }) {
+  const auto = useMemo(() => (kind === "reserve" ? buildReserveNotice(date, unit) : buildLineMessage(date, unit)), [date, unit, kind]);
   const [edited, setEdited] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const text = edited ?? auto;
@@ -30,9 +30,9 @@ export default function LineShare({ date, unit }: { date: string; unit: UnitSumm
   return (
     <section className="panel">
       <div className="panel__row">
-        <h2 className="panel__title">LINEで連絡</h2>
+        <h2 className="panel__title">{kind === "reserve" ? "予備日の審判をLINEでお知らせ" : "LINEで連絡"}</h2>
       </div>
-      <p className="muted line-note">決まっている内容から連絡文を作りました。文章は自由に直せます。</p>
+      <p className="muted line-note">{kind === "reserve" ? "予備日の審判の人が決まったら、ここから送れます。決まるたびに文章が変わります。" : "決まっている内容から連絡文を作りました。文章は自由に直せます。"}</p>
       <textarea
         className="input input--area line-text"
         rows={Math.min(18, text.split("\n").length + 1)}

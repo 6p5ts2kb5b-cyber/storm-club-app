@@ -4,7 +4,7 @@
 // こうすることで「人数はそろったのに表示が🔴のまま」というズレが起きません。
 // ============================================================
 
-import { DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
+import { daysFromToday, DIVISION_LABEL, type DayMode, type Division, formatTime } from "./divisions";
 import type { Ground } from "./grounds";
 import type { Slot, UmpirePerson } from "./umpire";
 
@@ -197,6 +197,19 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
             level: "ng",
             text: u.games.some((g) => g.start) ? "未設定" : "未設定（試合時間が未入力）",
           },
+    );
+  }
+
+  // 予備日の審判（ギリギリまで決まらないことがあるので、予備日が近づいたら赤にする）
+  if (u.umpireRequired && u.reserveDate) {
+    const have = u.reserveUmpires?.length ?? 0;
+    const short = Math.max(0, u.umpireNeeded - have);
+    const near = daysFromToday(u.reserveDate) <= 3;
+    const md = `${Number(u.reserveDate.slice(5, 7))}/${Number(u.reserveDate.slice(8, 10))}`;
+    items.push(
+      short === 0
+        ? { key: "reserveUmpire", label: "予備日審判", level: "ok", text: `${md} 決定（${have}名）` }
+        : { key: "reserveUmpire", label: "予備日審判", level: near ? "ng" : "warn", text: `${md} あと${short}名（${have}/${u.umpireNeeded}名）` },
     );
   }
 

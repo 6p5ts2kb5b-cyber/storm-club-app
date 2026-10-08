@@ -113,6 +113,29 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
   return lines.join("\n");
 }
 
+/** 予備日の審判のお知らせ（ギリギリまで決まらないので、決まったらすぐ送れる文章） */
+export function buildReserveNotice(date: string, unit: UnitSummary): string {
+  if (!unit.reserveDate) return "";
+  const title = unit.division === "storm" ? "STORMクラブ" : `STORMクラブ ${DIVISION_LABEL[unit.division]}`;
+  const have = unit.reserveUmpires ?? [];
+  const short = unit.umpireRequired ? Math.max(0, unit.umpireNeeded - have.length) : 0;
+  const place = unit.reserveVenue || unit.venue || (unit.groundState === "decided" ? unit.groundName : undefined);
+  const lines: string[] = [];
+  lines.push(`【${title}】予備日の審判のお知らせ`);
+  lines.push(`${mdw(date)}の${unit.reserveName || unit.activityType || "大会"}が延期になった場合は、${mdw(unit.reserveDate)}に行います。`);
+  if (place) lines.push(`■会場　${place}`);
+  lines.push("");
+  if (have.length) lines.push(`■審判　${have.join("／")}`);
+  if (unit.umpireRequired) {
+    lines.push(
+      short === 0
+        ? "審判は決まりました。よろしくお願いします。"
+        : `${have.length ? `あと${short}名` : "審判"}は、決まり次第あらためてお知らせします。`,
+    );
+  }
+  return lines.join("\n");
+}
+
 /** LINEの共有画面を開くURL（送り先はLINEの画面で選びます） */
 export function lineShareUrl(text: string): string {
   return `https://line.me/R/share?text=${encodeURIComponent(text)}`;

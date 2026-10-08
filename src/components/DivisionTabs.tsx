@@ -332,6 +332,9 @@ export default function DivisionTabs({
       {unit && (
         <div className="detail-block" id="sec-line">
           <LineShare key={`line-${unit.division}`} date={date} unit={unit} />
+          {unit.reserveDate && unit.umpireRequired && (
+            <LineShare key={`line-reserve-${unit.division}-${(unit.reserveUmpires ?? []).join(",")}`} date={date} unit={unit} kind="reserve" />
+          )}
         </div>
       )}
 
