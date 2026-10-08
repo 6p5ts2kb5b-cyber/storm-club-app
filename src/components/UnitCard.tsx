@@ -95,8 +95,12 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
           {unit.tournamentState === "postponed"
             ? `${unit.tournamentName}は延期になったので、この日に大会です`
             : unit.tournamentState === "not_held"
-            ? `${unit.tournamentName}は実施されないので、練習です`
-            : `${unit.tournamentName}が実施されたら休養日／実施されなければ練習`}
+            ? unit.tournamentDate
+              ? `${unit.tournamentName}が実施されたので、練習です`
+              : `${unit.tournamentName}は実施されないので、練習です`
+            : unit.tournamentDate
+              ? `${unit.tournamentName}が実施されたら休養日か練習／延期ならこの日に大会`
+              : `${unit.tournamentName}が実施されたら休養日／実施されなければ練習`}
         </p>
       )}
 

@@ -34,8 +34,15 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
   if (unit.tournamentName && unit.tournamentState === "postponed") {
     lines.push(`※${unit.tournamentName}が延期になったため、この日に大会を行います。`);
     lines.push("");
+  } else if (unit.tournamentName && unit.tournamentState === "not_held" && unit.tournamentDate) {
+    lines.push(`※${reserveText(unit)}です。大会が実施されたため、この日は練習です。`);
+    lines.push("");
   } else if (unit.tournamentName && unit.tournamentState !== "not_held") {
-    lines.push(`※${reserveText(unit) ? `${reserveText(unit)}です。` : ""}${unit.tournamentName}が実施される場合は休養日です。実施されない場合は、下の予定で練習をします。決まり次第あらためて連絡します。`);
+    lines.push(
+      unit.tournamentDate
+        ? `※${reserveText(unit)}です。大会が実施された場合は休養日または練習（下の予定）、延期の場合はこの日に大会を行います。決まり次第あらためて連絡します。`
+        : `※${unit.tournamentName}が実施される場合は休養日です。実施されない場合は、下の予定で練習をします。決まり次第あらためて連絡します。`,
+    );
     lines.push("");
   }
 

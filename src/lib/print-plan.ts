@@ -118,8 +118,10 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
   if (u.note) notes.push(u.note);
   if (u.tournamentName && u.tournamentState === "postponed") {
     notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が延期になったため、この日に大会を行います。`);
+  } else if (u.tournamentName && u.tournamentState === "not_held" && u.tournamentDate) {
+    notes.push(`${reserveText(u)}。大会が実施されたため、この日は練習です。`);
   } else if (u.tournamentName && u.tournamentState !== "not_held") {
-    notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が実施される場合は休養日、実施されない場合は練習です。決まり次第ご連絡します。`);
+    notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が実施される場合は休養日または練習です。決まり次第ご連絡します。`);
   }
 
   return {

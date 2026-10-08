@@ -13,6 +13,14 @@ const CHOICES: { state: TournamentState; title: string; sub: string }[] = [
   { state: "postponed", title: "延期", sub: "→ この日に大会" },
 ];
 
+// 予備日にしているときは、「大会が実施されたら、休養日か練習か」を選ぶ
+const RESERVE_CHOICES: { state: TournamentState; title: string; sub: string }[] = [
+  { state: "pending", title: "確認中", sub: "まだ分からない" },
+  { state: "held", title: "実施される", sub: "→ 休養日" },
+  { state: "not_held", title: "実施される", sub: "→ 練習" },
+  { state: "postponed", title: "延期", sub: "→ この日に大会" },
+];
+
 export default function TournamentPanel({
   name,
   state,
@@ -94,7 +102,7 @@ export default function TournamentPanel({
       <div className="field">
         <span className="field__label">{name}は</span>
         <div className="tour-choices" role="radiogroup" aria-label="大会が実施されるか">
-          {CHOICES.map((c) => {
+          {(reserveOf ? RESERVE_CHOICES : CHOICES).map((c) => {
             const active = (state ?? "pending") === c.state;
             return (
               <button
@@ -120,8 +128,10 @@ export default function TournamentPanel({
           : state === "postponed"
             ? "大会が延期になったので、この日に大会を行います。会場・試合は下で入れてください。"
           : state === "not_held"
-            ? "大会は実施されないので、通常どおり練習の準備を進めます。"
-            : "実施が決まるまでは「確認中」と表示します。実施されないときの練習の会場・時間は、下で先に入れておけます。"}
+            ? reserveOf
+              ? "大会が実施されたので、この日は練習です。会場・時間などは下で入れてください。"
+              : "大会は実施されないので、通常どおり練習の準備を進めます。"
+            : "実施が決まるまでは「確認中」と表示します。実施されたあとの練習の会場・時間は、下で先に入れておけます。"}
       </p>
     </section>
   );
