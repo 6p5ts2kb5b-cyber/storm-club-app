@@ -4,7 +4,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
-import { heldPlanText, mdw, reserveHeading, reservesByDate } from "./reserve";
+import { heldPlanText, mdw, reserveHeading, reservesByDate, umpireStatusText } from "./reserve";
 import { type DaySummary, isRest, reserveText, type UnitSummary } from "./status";
 
 /** 送り先のよく使う組み合わせ */
@@ -70,6 +70,8 @@ export interface PrintGroup {
   notes: string[];
   /** 予備日（大会の日にだけ）例：10/17（土）　会場 */
   reserve?: string;
+  /** 試合のあとに出す項目（指導者・審判・予備日の審判） */
+  after: PrintLine[];
 }
 
 export interface PrintRow {
@@ -83,7 +85,7 @@ export interface PrintRow {
   /** 休みだけの日（細い1行にする） */
   quiet: boolean;
   /** この日が予備日になっている大会の案内（青い帯） */
-  reserves: { heading: string; postponed: string; held: string }[];
+  reserves: { heading: string; postponed: string; held: string; umpires: string }[];
 }
 
 function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
@@ -96,6 +98,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
       rest: true,
       lines: [],
       games: [],
+      after: [],
       notes: [reserveText(u) ? `${reserveText(u)}（大会が実施されたため）` : `${u.tournamentName}が実施されるため`],
     };
   }
@@ -129,6 +132,17 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が実施される場合は休養日または練習です。決まり次第ご連絡します。`);
   }
 
+  // 指導者・審判（決まっている名前と、足りない人数）
+  const after: PrintLine[] = [];
+  if (u.coaches.length) after.push({ k: "指導者", v: u.coaches.join("・") });
+  if (u.umpireRequired) {
+    const names = [...new Set((u.umpireSlots ?? []).filter((s) => s.staffId && s.staffName).map((s) => s.staffName as string))];
+    after.push({ k: "審判", v: umpireStatusText(names, u.umpireNeeded) });
+    if (u.reserveDate) {
+      after.push({ k: "予備日審判", v: umpireStatusText(u.reserveUmpires ?? [], u.umpireNeeded) });
+    }
+  }
+
   return {
     key: u.division,
     division: u.division,
@@ -138,6 +152,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     lines,
     games,
     notes,
+    after,
     reserve: u.reserveDate ? `${mdw(u.reserveDate)}${u.reserveVenue ? `　${u.reserveVenue}` : ""}` : undefined,
   };
 }
@@ -180,6 +195,7 @@ export function buildRows(days: DaySummary[], divisions: Division[], year: numbe
         heading: reserveHeading(r),
         postponed: `${r.name}${r.venue ? `（${r.venue}）` : ""}`,
         held,
+        umpires: r.needed > 0 || r.umpires.length ? umpireStatusText(r.umpires, r.needed) : "",
       })),
     });
   }

@@ -17,6 +17,8 @@ export interface ReserveInfo {
   venue: string;
   /** 予備日に審判を出す人 */
   umpires: string[];
+  /** 予備日に必要な審判の人数（審判が不要なら0） */
+  needed: number;
 }
 
 export function md(date: string): string {
@@ -39,6 +41,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
         name: u.reserveName || u.activityType || "大会",
         venue: u.reserveVenue || u.venue || u.groundName || "",
         umpires: u.reserveUmpires ?? [],
+        needed: u.umpireRequired ? u.umpireNeeded : 0,
       };
       map.set(u.reserveDate, [...(map.get(u.reserveDate) ?? []), info]);
     }
@@ -57,6 +60,15 @@ export function heldPlanText(units: UnitSummary[]): string {
         .join("　"),
     )
     .join(" ／ ");
+}
+
+/** 「2/4名　石川・上村（あと2名）」のような審判の言い方 */
+export function umpireStatusText(names: string[], needed: number): string {
+  if (needed <= 0) return names.join("・");
+  const short = Math.max(0, needed - names.length);
+  const head = `${names.length}/${needed}名`;
+  if (names.length === 0) return `${needed}名必要（あと${short}名）`;
+  return `${head}　${names.join("・")}${short ? `（あと${short}名）` : ""}`;
 }
 
 export function reserveHeading(r: ReserveInfo): string {

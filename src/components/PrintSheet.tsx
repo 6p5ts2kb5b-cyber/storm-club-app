@@ -27,7 +27,7 @@ function Group({ g }: { g: PrintGroup }) {
         <b className={g.rest ? "pl-rest" : undefined}>{g.title}</b>
         {g.rest && g.notes[0] && <span className="pl-why">{g.notes[0]}</span>}
       </p>
-      {(g.lines.length > 0 || g.games.length > 0 || g.reserve) && (
+      {(g.lines.length > 0 || g.games.length > 0 || g.after.length > 0 || g.reserve) && (
         <dl className="pl-dl">
           {g.lines.slice(0, 1).map((l) => (
             <Line key={l.k} k={l.k} v={l.v} strong={l.strong} />
@@ -50,6 +50,9 @@ function Group({ g }: { g: PrintGroup }) {
               </dd>
             </>
           )}
+          {g.after.map((l) => (
+            <Line key={l.k} k={l.k} v={l.v} />
+          ))}
           {g.reserve && <Line k="予備日" v={g.reserve} />}
         </dl>
       )}
@@ -274,6 +277,12 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                             <span>延期のとき</span>
                             {x.postponed}
                           </p>
+                          {x.umpires && (
+                            <p>
+                              <span>延期の審判</span>
+                              {x.umpires}
+                            </p>
+                          )}
                           <p>
                             <span>実施のとき</span>
                             <b>{x.held}</b>
