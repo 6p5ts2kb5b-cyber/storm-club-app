@@ -17,7 +17,9 @@ import type { StaffOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
 import Lamp from "@/components/Lamp";
-import { checkUnit, type Game, type Level, type UnitSummary, worstLevel } from "@/lib/status";
+import TournamentPanel from "@/components/TournamentPanel";
+import { checkUnit, type Game, isRest, type Level, type TournamentState, type UnitSummary, worstLevel } from "@/lib/status";
+import { saveTournament } from "@/lib/activity-actions";
 import { deriveUmpire } from "@/lib/umpire";
 
 /** 各欄の状態（ジャンプ用のバーに出すランプ） */
@@ -63,6 +65,7 @@ export default function DivisionTabs({
   const [coachBusy, setCoachBusy] = useState<string | null>(null);
   const [toastEl, showToast] = useToast();
   const unit = units[active];
+  const rest = unit ? isRest(unit) : false; // 大会が実施されて「休み」の日
 
   // 保存後にサーバーから届いた最新の内容で置き換える
   useEffect(() => setUnits(initialUnits), [initialUnits]);
@@ -106,6 +109,25 @@ export default function DivisionTabs({
       return false;
     }
     patchActive({ playerGatherTime: time ?? undefined, gatherPlace: place ?? undefined });
+    showToast("ok", "保存しました");
+    router.refresh();
+    return true;
+  }
+
+  async function changeTournament(name: string | null, state: TournamentState): Promise<boolean> {
+    if (!unit) return false;
+    const patch = { tournamentName: name ?? undefined, tournamentState: name ? state : undefined };
+    if (demo || !unit.id) {
+      patchActive(patch);
+      showToast("ok", "保存しました（お試しモード）");
+      return true;
+    }
+    const result = await saveTournament(unit.id, name, state);
+    if (!result.ok) {
+      showToast("ng", result.message);
+      return false;
+    }
+    patchActive(patch);
     showToast("ok", "保存しました");
     router.refresh();
     return true;
@@ -156,7 +178,7 @@ export default function DivisionTabs({
         </div>
       )}
 
-      {unit && (
+      {unit && !rest && (
         <nav className="jumpbar" aria-label="この日の入力欄へ移動">
           {sectionLevels(unit).map((sec) => (
             <a key={sec.id} href={`#${sec.id}`} className={`jump jump--${sec.level}`}>
@@ -174,6 +196,18 @@ export default function DivisionTabs({
       )}
 
       {unit && (
+        <div className="detail-block" id="sec-event">
+          <TournamentPanel
+            key={`event-${unit.division}`}
+            name={unit.tournamentName}
+            state={unit.tournamentState}
+            isAdmin={isAdmin}
+            onSave={changeTournament}
+          />
+        </div>
+      )}
+
+      {unit && !rest && (
         <div className="detail-block" id="sec-games">
           <GamePanel
             key={`games-${unit.division}`}
@@ -187,7 +221,7 @@ export default function DivisionTabs({
         </div>
       )}
 
-      {unit && (
+      {unit && !rest && (
         <div className="detail-block" id="sec-ground">
           <GroundPanel
             key={unit.division}
@@ -201,7 +235,7 @@ export default function DivisionTabs({
         </div>
       )}
 
-      {unit && (
+      {unit && !rest && (
         <div className="detail-block" id="sec-gather">
           <PlayerGatherPanel
             key={`gather-${unit.division}`}
@@ -213,7 +247,7 @@ export default function DivisionTabs({
         </div>
       )}
 
-      {unit && (
+      {unit && !rest && (
         <div className="detail-block" id="sec-coach">
           <CoachPanel
             staff={staff}
@@ -225,7 +259,7 @@ export default function DivisionTabs({
         </div>
       )}
 
-      {unit && (
+      {unit && !rest && (
         <div className="detail-block" id="sec-umpire">
           <UmpireSection
             key={`ump-${unit.division}`}

@@ -115,6 +115,23 @@ export async function savePlayerGather(unitId: string, time: string | null, plac
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }
 
+/** 「大会しだいで変わる予定」を保存（name が空なら、通常の予定に戻す） */
+export async function saveTournament(
+  unitId: string,
+  name: string | null,
+  state: "pending" | "held" | "not_held",
+): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("activity_units")
+    .update({ tournament_name: name && name.trim() ? name.trim() : null, tournament_state: state })
+    .eq("id", unitId);
+  if (error && /column|schema cache/i.test(error.message ?? "")) {
+    return { ok: false, message: "データベースの更新（0010）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+  }
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}
+
 function explainCoach(err: { message?: string; code?: string } | null | undefined): string {
   const message = err?.message ?? "";
   if (err?.code === "23505" || /duplicate|unique/i.test(message)) return "この人はすでに参加になっています。";

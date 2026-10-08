@@ -27,6 +27,19 @@ export interface Game {
   note?: string;
 }
 
+export type TournamentState = "pending" | "held" | "not_held";
+
+export const TOURNAMENT_STATE_LABEL: Record<TournamentState, string> = {
+  pending: "確認中",
+  held: "実施される → 休み",
+  not_held: "実施されない → 練習",
+};
+
+/** 大会が実施されるため、この日が「休み」になっているか */
+export function isRest(u: Pick<UnitSummary, "tournamentName" | "tournamentState">): boolean {
+  return Boolean(u.tournamentName) && u.tournamentState === "held";
+}
+
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
 export type Level = "ok" | "warn" | "ng" | "none";
 
@@ -77,6 +90,10 @@ export interface UnitSummary {
   /** 審判一人ずつの集合時間の設定 */
   umpirePeople?: UmpirePerson[];
   games: Game[];
+  /** 「大会しだいで変わる予定」の大会名（例：STORM杯・JJBF大会）。空なら通常の予定 */
+  tournamentName?: string;
+  /** pending=確認中 / held=実施される（→休み） / not_held=実施されない（→練習） */
+  tournamentState?: TournamentState;
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }
@@ -100,7 +117,20 @@ export interface CheckItem {
 
 /** 活動単位の各項目の状態を判定します */
 export function checkUnit(u: UnitSummary): CheckItem[] {
+  // 大会が実施される日は「休み」。準備する項目はありません
+  if (isRest(u)) {
+    return [{ key: "tournament", label: "大会", level: "none", text: `${u.tournamentName}が実施 → 休み` }];
+  }
   const items: CheckItem[] = [];
+
+  // 大会しだいの予定：実施されるかどうか
+  if (u.tournamentName) {
+    items.push(
+      u.tournamentState === "not_held"
+        ? { key: "tournament", label: "大会", level: "ok", text: `${u.tournamentName}なし → 練習` }
+        : { key: "tournament", label: "大会", level: "warn", text: `${u.tournamentName}の実施 確認中` },
+    );
+  }
 
   // グラウンド
   if (u.groundState === "decided") {
@@ -170,6 +200,7 @@ export function collectIssues(days: DaySummary[]): Issue[] {
   const issues: Issue[] = [];
   for (const day of days) {
     for (const u of day.units) {
+      if (isRest(u)) continue; // 休みの日は、確認することがない
       for (const item of checkUnit(u)) {
         if (item.level === "ng" || item.level === "warn") {
           issues.push({
@@ -198,6 +229,7 @@ export function collectIssues(days: DaySummary[]): Issue[] {
 
 /** 活動単位全体の一番悪い状態 */
 export function worstLevel(u: UnitSummary): Level {
+  if (isRest(u)) return "none";
   const levels = checkUnit(u).map((i) => i.level);
   if (levels.includes("ng") || u.openPositions.length > 0) return "ng";
   if (levels.includes("warn")) return "warn";

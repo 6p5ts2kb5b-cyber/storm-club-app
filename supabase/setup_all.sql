@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0009 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0010 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -518,4 +518,22 @@ update public.staff set email = null where email is not null and btrim(email) = 
 alter table public.games add column if not exists storm_plays boolean not null default true;
 alter table public.games add column if not exists opponent2   text;
 alter table public.games add column if not exists umpire_team text;
+
+-- >>>>>>>>>> 0010_tournament_condition.sql >>>>>>>>>>
+-- ============================================================
+-- STORMクラブ運営アプリ データベース準備 その10：大会しだいで変わる予定
+--
+-- 例：「STORM杯・JJBF大会が実施されたら休み／実施されなければ練習（会場つき）」
+--
+-- 追加する項目（activity_units）：
+--   tournament_name   … 大会の名前（空なら、大会しだいの予定ではない）
+--   tournament_state  … pending=確認中 / held=実施される（→休み） / not_held=実施されない（→練習）
+-- ============================================================
+
+alter table public.activity_units add column if not exists tournament_name text;
+alter table public.activity_units add column if not exists tournament_state text not null default 'pending';
+
+alter table public.activity_units drop constraint if exists activity_units_tournament_state_check;
+alter table public.activity_units
+  add constraint activity_units_tournament_state_check check (tournament_state in ('pending', 'held', 'not_held'));
 

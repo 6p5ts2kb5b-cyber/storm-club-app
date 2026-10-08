@@ -4,7 +4,7 @@
 //   下段：項目ごとのランプ（緑＝決定・黄＝確認中・赤＝未確定）
 import Lamp from "@/components/Lamp";
 import { DIVISION_LABEL, formatTime } from "@/lib/divisions";
-import { checkUnit, type Level, type UnitSummary, worstLevel } from "@/lib/status";
+import { checkUnit, isRest, type Level, type UnitSummary, worstLevel } from "@/lib/status";
 
 /** 時刻のマス目に並べる内容 */
 function lineScore(unit: UnitSummary) {
@@ -20,7 +20,8 @@ function lineScore(unit: UnitSummary) {
   return cells;
 }
 
-function stateText(levels: Level[], openCount: number): { word: string; level: Level } {
+function stateText(levels: Level[], openCount: number, rest = false): { word: string; level: Level } {
+  if (rest) return { word: "休み", level: "none" };
   const ng = levels.filter((l) => l === "ng").length + openCount;
   const warn = levels.filter((l) => l === "warn").length;
   if (ng > 0) return { word: `未確定 ${ng}`, level: "ng" };
@@ -33,7 +34,9 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
   const state = stateText(
     items.map((i) => i.level),
     unit.openPositions.length,
+    isRest(unit),
   );
+  const rest = isRest(unit);
 
   // 一覧用の小さい表示：区分名とランプの列だけ
   if (compact) {
@@ -53,6 +56,25 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
     );
   }
 
+  // 大会が実施されて「休み」の日：準備する項目は出さず、休みであることを大きく見せる
+  if (rest) {
+    return (
+      <section className={`board board--${unit.division} board--rest`} aria-label={`${DIVISION_LABEL[unit.division]}は休み`}>
+        <header className="board__head">
+          <h3 className="board__name">{DIVISION_LABEL[unit.division]}</h3>
+          <span className="board__state board__state--none">
+            <Lamp level="none" />
+            休み
+          </span>
+        </header>
+        <div className="rest">
+          <span className="rest__word">休み</span>
+          <span className="rest__why">{unit.tournamentName}が実施されるため、この日の練習はありません。</span>
+        </div>
+      </section>
+    );
+  }
+
   const cells = lineScore(unit);
   // 時刻（選手集合・審判集合）は上のマス目に出ているので、ランプの列では省く
   const checks = items.filter((i) => i.key !== "player" && i.key !== "umpireGather");
@@ -67,8 +89,16 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
         </span>
       </header>
 
+      {unit.tournamentName && (
+        <p className={`board__cond board__cond--${unit.tournamentState ?? "pending"}`}>
+          {unit.tournamentState === "not_held"
+            ? `${unit.tournamentName}は実施されないので、練習です`
+            : `${unit.tournamentName}が実施されたら休み／実施されなければ練習`}
+        </p>
+      )}
+
       <p className="board__venue">
-        <span className="board__venue-label">会場</span>
+        <span className="board__venue-label">{unit.tournamentName && unit.tournamentState !== "not_held" ? "練習の会場" : "会場"}</span>
         {unit.venue ?? <span className="board__dim">未定</span>}
       </p>
 

@@ -5,7 +5,7 @@ import Lamp from "@/components/Lamp";
 import SampleBanner from "@/components/SampleBanner";
 import { currentIsAdmin, loadDays } from "@/lib/data";
 import { DIVISION_LABEL, todayInTokyo } from "@/lib/divisions";
-import { worstLevel } from "@/lib/status";
+import { isRest, worstLevel } from "@/lib/status";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +28,9 @@ export default async function ActivitiesPage() {
           <span className="list-row__tags">
             {d.units.map((u) => (
               <span key={u.division} className="unit-state">
-                <Lamp level={worstLevel(u)} labelled />
+                {isRest(u) ? <Lamp level="none" /> : <Lamp level={worstLevel(u)} labelled />}
                 {DIVISION_LABEL[u.division]}
+                {isRest(u) && <span className="rest-tag">休み</span>}
               </span>
             ))}
           </span>
