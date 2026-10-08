@@ -15,6 +15,8 @@ export interface ReserveInfo {
   name: string;
   /** 延期のときの会場（空なら本来の会場と同じ） */
   venue: string;
+  /** 予備日に審判を出す人 */
+  umpires: string[];
 }
 
 export function md(date: string): string {
@@ -36,6 +38,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
         division: u.division,
         name: u.reserveName || u.activityType || "大会",
         venue: u.reserveVenue || u.venue || u.groundName || "",
+        umpires: u.reserveUmpires ?? [],
       };
       map.set(u.reserveDate, [...(map.get(u.reserveDate) ?? []), info]);
     }

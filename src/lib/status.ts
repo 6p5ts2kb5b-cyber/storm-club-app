@@ -107,6 +107,8 @@ export interface UnitSummary {
   reserveDate?: string;
   reserveName?: string;
   reserveVenue?: string;
+  /** 予備日に審判を出す人（名前） */
+  reserveUmpires?: string[];
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }

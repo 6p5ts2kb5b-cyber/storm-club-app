@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0013 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0014 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -556,3 +556,7 @@ alter table public.activity_units
 alter table public.activity_units add column if not exists reserve_date date;
 alter table public.activity_units add column if not exists reserve_name text;
 alter table public.activity_units add column if not exists reserve_venue text;
+
+-- ---- 0014_reserve_umpires.sql ----
+-- 0014: 予備日の審判（名前を「、」でつないで保存）
+alter table public.activity_units add column if not exists reserve_umpires text;

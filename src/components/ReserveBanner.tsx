@@ -13,6 +13,12 @@ export default function ReserveBanner({ reserves, heldPlan }: { reserves: Reserv
             {r.name}
             {r.venue ? `（${r.venue}）` : ""}
           </p>
+          {r.umpires.length > 0 && (
+            <p className="rsv-banner__row">
+              <span>延期の審判</span>
+              {r.umpires.join("・")}
+            </p>
+          )}
           <p className="rsv-banner__row">
             <span>実施のとき</span>
             <b>{heldPlan}</b>

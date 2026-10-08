@@ -8,6 +8,8 @@ export default function ReservePanel({
   date,
   name,
   venue,
+  umpires,
+  umpireChoices,
   defaultName,
   venueChoices,
   isAdmin,
@@ -16,29 +18,36 @@ export default function ReservePanel({
   date?: string;
   name?: string;
   venue?: string;
+  /** 予備日に審判を出す人（名前） */
+  umpires: string[];
+  /** 選べる審判（名前） */
+  umpireChoices: string[];
   /** 表示名の見本（活動の種類） */
   defaultName: string;
   /** 会場の候補（候補グラウンドの名前など） */
   venueChoices: string[];
   isAdmin: boolean;
-  onSave: (date: string | null, name: string | null, venue: string | null) => Promise<boolean>;
+  onSave: (date: string | null, name: string | null, venue: string | null, umpires: string[]) => Promise<boolean>;
 }) {
   const [d, setD] = useState(date ?? "");
   const [n, setN] = useState(name ?? "");
   const [v, setV] = useState(venue ?? "");
+  const [u, setU] = useState<string[]>(umpires);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setD(date ?? "");
     setN(name ?? "");
     setV(venue ?? "");
-  }, [date, name, venue]);
+    setU(umpires);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, name, venue, umpires.join("、")]);
 
   if (!isAdmin && !date) return null;
 
-  const changed = d !== (date ?? "") || n !== (name ?? "") || v !== (venue ?? "");
+  const changed = d !== (date ?? "") || n !== (name ?? "") || v !== (venue ?? "") || u.join("、") !== umpires.join("、");
   async function save(nextDate: string | null) {
     setBusy(true);
-    await onSave(nextDate, n || null, v || null);
+    await onSave(nextDate, n || null, v || null, u);
     setBusy(false);
   }
 
@@ -49,6 +58,7 @@ export default function ReservePanel({
         <p>
           {mdw(date!)}
           {venue ? `　${venue}` : ""}
+          {umpires.length ? `　審判：${umpires.join("・")}` : ""}
         </p>
       </section>
     );
@@ -88,6 +98,26 @@ export default function ReservePanel({
             <span className="field__label">予備日の会場（ちがう場合だけ）</span>
             <input className="input" value={v} disabled={busy} onChange={(e) => setV(e.target.value)} placeholder="空なら、この日と同じ会場" />
           </label>
+          <div className="field">
+            <span className="field__label">予備日の審判（出せる人を選ぶ）</span>
+            <div className="pr-chips">
+              {[...new Set([...umpireChoices, ...u])].map((nm) => {
+                const on = u.includes(nm);
+                return (
+                  <button
+                    key={nm}
+                    type="button"
+                    aria-pressed={on}
+                    className={`pr-chip${on ? " is-on" : ""}`}
+                    disabled={busy}
+                    onClick={() => setU(on ? u.filter((x) => x !== nm) : [...u, nm])}
+                  >
+                    {nm}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {venueChoices.length > 0 && (
             <div className="pr-chips">
               {venueChoices.map((c) => (

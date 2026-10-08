@@ -72,6 +72,7 @@ STORMクラブの活動準備（グラウンド・選手集合時間・指導者
 11. `0011_tournament_reserve_date.sql` … 大会の予備日（この日は何日の大会の予備日か）
 12. `0012_tournament_postponed.sql` … 予備日に大会を行う（延期）を選べるようにする
 13. `0013_reserve_day.sql` … 大会の予備日（日付・表示名・会場）
+14. `0014_reserve_umpires.sql` … 予備日の審判
 
 ## 保護者配布用の予定表（/print）
 

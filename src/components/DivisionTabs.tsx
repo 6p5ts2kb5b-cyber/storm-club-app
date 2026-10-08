@@ -142,19 +142,20 @@ export default function DivisionTabs({
     return true;
   }
 
-  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null): Promise<boolean> {
+  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null, rUmpires: string[]): Promise<boolean> {
     if (!unit) return false;
     const patch = {
       reserveDate: rDate ?? undefined,
       reserveName: rDate && rName ? rName : undefined,
       reserveVenue: rDate && rVenue ? rVenue : undefined,
+      reserveUmpires: rDate && rUmpires.length ? rUmpires : undefined,
     };
     if (demo || !unit.id) {
       patchActive(patch);
       showToast("ok", "保存しました（お試しモード）");
       return true;
     }
-    const result = await saveReserve(unit.id, rDate, rName, rVenue);
+    const result = await saveReserve(unit.id, rDate, rName, rVenue, rUmpires);
     if (!result.ok) {
       showToast("ng", result.message);
       return false;
@@ -251,6 +252,8 @@ export default function DivisionTabs({
             date={unit.reserveDate}
             name={unit.reserveName}
             venue={unit.reserveVenue}
+            umpires={unit.reserveUmpires ?? []}
+            umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
             defaultName={unit.activityType ?? ""}
             venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
             isAdmin={isAdmin}
