@@ -4,6 +4,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
+import { heldPlanText, mdw, reserveHeading, reservesByDate } from "./reserve";
 import { type DaySummary, isRest, reserveText, type UnitSummary } from "./status";
 
 /** 送り先のよく使う組み合わせ */
@@ -67,6 +68,8 @@ export interface PrintGroup {
   lines: PrintLine[];
   games: PrintGame[];
   notes: string[];
+  /** 予備日（大会の日にだけ）例：10/17（土）　会場 */
+  reserve?: string;
 }
 
 export interface PrintRow {
@@ -79,6 +82,8 @@ export interface PrintRow {
   groups: PrintGroup[];
   /** 休みだけの日（細い1行にする） */
   quiet: boolean;
+  /** この日が予備日になっている大会の案内（青い帯） */
+  reserves: { heading: string; postponed: string; held: string }[];
 }
 
 function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
@@ -133,6 +138,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     lines,
     games,
     notes,
+    reserve: u.reserveDate ? `${mdw(u.reserveDate)}${u.reserveVenue ? `　${u.reserveVenue}` : ""}` : undefined,
   };
 }
 
@@ -140,24 +146,41 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
 export function buildRows(days: DaySummary[], divisions: Division[], year: number, month: number, period: Period): PrintRow[] {
   const { from, to } = periodRange(year, month, period);
   const wantsBothClubs = divisions.includes("top") && divisions.includes("academy");
+  const reserveMap = reservesByDate(days);
   const rows: PrintRow[] = [];
 
-  for (const d of days) {
-    if (d.date < from || d.date > to) continue;
-    const units = d.units.filter((u) => divisions.includes(u.division));
-    if (units.length === 0) continue;
+  // 予備日にあたる日（その日に予定が登録されていなくても行を作る）
+  const dates = new Set<string>(days.map((d) => d.date));
+  reserveMap.forEach((list, date) => {
+    if (list.some((r) => divisions.includes(r.division))) dates.add(date);
+  });
+
+  for (const date of dates) {
+    if (date < from || date > to) continue;
+    const d = days.find((x) => x.date === date);
+    const units = (d?.units ?? []).filter((u) => divisions.includes(u.division));
+    const reserves = (reserveMap.get(date) ?? []).filter((r) => divisions.includes(r.division));
+    if (units.length === 0 && reserves.length === 0) continue;
     const showDivision = (u: UnitSummary) => u.division !== "storm" && (units.length > 1 || wantsBothClubs);
-    const groups = units.map((u) => groupOf(u, showDivision(u)));
-    const wd = weekdayIndex(d.date);
+    let groups = units.map((u) => groupOf(u, showDivision(u)));
+    // 予備日の日の「休養日」は青い帯に出るので、重ねて出さない
+    if (reserves.length && groups.every((g) => g.rest)) groups = [];
+    const held = heldPlanText(units);
+    const wd = weekdayIndex(date);
     rows.push({
-      date: d.date,
-      day: Number(d.date.slice(8, 10)),
-      weekday: weekdayLabel(d.date),
+      date,
+      day: Number(date.slice(8, 10)),
+      weekday: weekdayLabel(date),
       weekend: wd === 0 || wd === 6,
       sat: wd === 6,
       sun: wd === 0,
       groups,
-      quiet: groups.every((g) => g.rest),
+      quiet: groups.length > 0 && groups.every((g) => g.rest),
+      reserves: reserves.map((r) => ({
+        heading: reserveHeading(r),
+        postponed: `${r.name}${r.venue ? `（${r.venue}）` : ""}`,
+        held,
+      })),
     });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));

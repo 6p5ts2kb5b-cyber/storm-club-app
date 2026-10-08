@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0012 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0013 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -549,3 +549,10 @@ alter table public.activity_units add column if not exists tournament_date date;
 alter table public.activity_units drop constraint if exists activity_units_tournament_state_check;
 alter table public.activity_units
   add constraint activity_units_tournament_state_check check (tournament_state in ('pending', 'held', 'not_held', 'postponed'));
+
+-- ---- 0013_reserve_day.sql ----
+-- 0013: 大会の予備日（予備日・予備日の表示名・予備日の会場）
+-- 大会の日に「予備日」を入れると、その日付に自動で「☂ ○/○ ○○ の予備日」の案内が出る
+alter table public.activity_units add column if not exists reserve_date date;
+alter table public.activity_units add column if not exists reserve_name text;
+alter table public.activity_units add column if not exists reserve_venue text;

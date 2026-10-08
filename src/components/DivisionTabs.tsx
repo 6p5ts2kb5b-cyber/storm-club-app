@@ -17,9 +17,12 @@ import type { StaffOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
 import Lamp from "@/components/Lamp";
+import ReserveBanner from "@/components/ReserveBanner";
+import ReservePanel from "@/components/ReservePanel";
 import TournamentPanel from "@/components/TournamentPanel";
+import type { ReserveInfo } from "@/lib/reserve";
 import { checkUnit, type Game, isRest, type Level, type TournamentState, type UnitSummary, worstLevel } from "@/lib/status";
-import { saveTournament } from "@/lib/activity-actions";
+import { saveReserve, saveTournament } from "@/lib/activity-actions";
 import { deriveUmpire } from "@/lib/umpire";
 
 /** 各欄の状態（ジャンプ用のバーに出すランプ） */
@@ -48,6 +51,8 @@ export default function DivisionTabs({
   isAdmin,
   canEdit,
   demo,
+  reserves = [],
+  heldPlan = "休養日",
 }: {
   /** この活動日 "2026-10-11" */
   date: string;
@@ -58,6 +63,10 @@ export default function DivisionTabs({
   /** グラウンド・指導者・審判を入力できるか（管理者・スタッフ） */
   canEdit: boolean;
   demo: boolean;
+  /** この日が予備日になっている大会 */
+  reserves?: ReserveInfo[];
+  /** 予備日で大会が実施されたときの、この日の予定の文章 */
+  heldPlan?: string;
 }) {
   const router = useRouter();
   const [units, setUnits] = useState<UnitSummary[]>(initialUnits);
@@ -114,15 +123,15 @@ export default function DivisionTabs({
     return true;
   }
 
-  async function changeTournament(name: string | null, state: TournamentState, reserveOf: string | null): Promise<boolean> {
+  async function changeTournament(name: string | null, state: TournamentState): Promise<boolean> {
     if (!unit) return false;
-    const patch = { tournamentName: name ?? undefined, tournamentState: name ? state : undefined, tournamentDate: name && reserveOf ? reserveOf : undefined };
+    const patch = { tournamentName: name ?? undefined, tournamentState: name ? state : undefined };
     if (demo || !unit.id) {
       patchActive(patch);
       showToast("ok", "保存しました（お試しモード）");
       return true;
     }
-    const result = await saveTournament(unit.id, name, state, reserveOf);
+    const result = await saveTournament(unit.id, name, state);
     if (!result.ok) {
       showToast("ng", result.message);
       return false;
@@ -132,6 +141,31 @@ export default function DivisionTabs({
     router.refresh();
     return true;
   }
+
+  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null): Promise<boolean> {
+    if (!unit) return false;
+    const patch = {
+      reserveDate: rDate ?? undefined,
+      reserveName: rDate && rName ? rName : undefined,
+      reserveVenue: rDate && rVenue ? rVenue : undefined,
+    };
+    if (demo || !unit.id) {
+      patchActive(patch);
+      showToast("ok", "保存しました（お試しモード）");
+      return true;
+    }
+    const result = await saveReserve(unit.id, rDate, rName, rVenue);
+    if (!result.ok) {
+      showToast("ng", result.message);
+      return false;
+    }
+    patchActive(patch);
+    showToast("ok", "保存しました");
+    router.refresh();
+    return true;
+  }
+
+  const reserved = reserves.length > 0;
 
   async function toggleCoach(staffId: string, join: boolean) {
     if (!unit) return;
@@ -189,6 +223,8 @@ export default function DivisionTabs({
         </nav>
       )}
 
+      <ReserveBanner reserves={reserves} heldPlan={heldPlan} />
+
       {unit && (
         <div className="detail-board">
           <UnitCard unit={unit} />
@@ -201,9 +237,24 @@ export default function DivisionTabs({
             key={`event-${unit.division}`}
             name={unit.tournamentName}
             state={unit.tournamentState}
-            reserveOf={unit.tournamentDate}
+            reserved={reserved}
             isAdmin={isAdmin}
             onSave={changeTournament}
+          />
+        </div>
+      )}
+
+      {unit && !rest && (
+        <div className="detail-block" id="sec-reserve">
+          <ReservePanel
+            key={`reserve-${unit.division}`}
+            date={unit.reserveDate}
+            name={unit.reserveName}
+            venue={unit.reserveVenue}
+            defaultName={unit.activityType ?? ""}
+            venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
+            isAdmin={isAdmin}
+            onSave={changeReserve}
           />
         </div>
       )}

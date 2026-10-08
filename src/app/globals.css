@@ -4015,3 +4015,14 @@ select.input {
   .pr-fit { height: auto !important; overflow: visible !important; background: none; border-radius: 0; }
   .pr-paper { position: static !important; transform: none !important; width: 100% !important; padding: 0 !important; }
 }
+
+/* 予備日 */
+.rsv-banner { display: grid; gap: 8px; margin: 10px 0; }
+.rsv-banner__item { border: 1.5px solid #8fb4e8; background: #eaf2fd; border-radius: 12px; padding: 10px 14px; }
+.rsv-banner__head { margin: 0 0 4px; font-weight: 800; color: #1c5fb0; font-size: 16px; }
+.rsv-banner__row { margin: 2px 0; }
+.rsv-banner__row span { display: inline-block; min-width: 5.5em; color: #444; font-size: 13px; }
+.pl-reserve { border: 1.5px solid #8fb4e8; background: #eaf2fd; border-radius: 6px; padding: 5px 10px; margin-bottom: 6px; break-inside: avoid; }
+.pl-reserve p { margin: 1px 0; }
+.pl-reserve span { display: inline-block; min-width: 5.5em; color: #444; font-size: 12px; }
+.pl-reserve__head { font-weight: 800; color: #1c5fb0; font-size: 15px; }

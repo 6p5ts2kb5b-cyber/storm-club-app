@@ -115,17 +115,38 @@ export async function savePlayerGather(unitId: string, time: string | null, plac
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }
 
+/** 大会の予備日（日付・表示名・会場）を保存（日付が空なら予備日なし） */
+export async function saveReserve(
+  unitId: string,
+  date: string | null,
+  name: string | null,
+  venue: string | null,
+): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("activity_units")
+    .update({
+      reserve_date: date || null,
+      reserve_name: date && name && name.trim() ? name.trim() : null,
+      reserve_venue: date && venue && venue.trim() ? venue.trim() : null,
+    })
+    .eq("id", unitId);
+  if (error && /column|schema cache/i.test(error.message ?? "")) {
+    return { ok: false, message: "データベースの更新（0013）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+  }
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}
+
 /** 「大会しだいで変わる予定」を保存（name が空なら、通常の予定に戻す） */
 export async function saveTournament(
   unitId: string,
   name: string | null,
   state: "pending" | "held" | "not_held" | "postponed",
-  reserveOf: string | null = null,
 ): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase
     .from("activity_units")
-    .update({ tournament_name: name && name.trim() ? name.trim() : null, tournament_state: state, tournament_date: name && reserveOf ? reserveOf : null })
+    .update({ tournament_name: name && name.trim() ? name.trim() : null, tournament_state: state })
     .eq("id", unitId);
   if (error && /column|schema cache/i.test(error.message ?? "")) {
     return { ok: false, message: "データベースの更新（0010〜0012）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };

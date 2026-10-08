@@ -103,6 +103,10 @@ export interface UnitSummary {
   tournamentState?: TournamentState;
   /** その大会の本来の日（この日がその「予備日」のとき）例：2026-10-11 */
   tournamentDate?: string;
+  /** この大会の予備日（例：2026-10-17）と、その表示名・延期のときの会場 */
+  reserveDate?: string;
+  reserveName?: string;
+  reserveVenue?: string;
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }

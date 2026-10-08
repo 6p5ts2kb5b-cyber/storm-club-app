@@ -3,7 +3,9 @@ import ActivityFormButton from "@/components/ActivityFormButton";
 import BigDate from "@/components/BigDate";
 import DivisionTabs from "@/components/DivisionTabs";
 import SampleBanner from "@/components/SampleBanner";
-import { currentRole, loadDay, loadStaffOptions } from "@/lib/data";
+import { currentRole, loadDay, loadDays, loadStaffOptions } from "@/lib/data";
+import ReserveBanner from "@/components/ReserveBanner";
+import { heldPlanText, type ReserveInfo, reservesByDate } from "@/lib/reserve";
 import { autoModeForDate } from "@/lib/divisions";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -20,7 +22,20 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   ]);
   const isAdmin = role === "admin";
   const canEdit = role === "admin" || role === "staff";
-  const day = result && result.ok ? result.data : null;
+  let day = result && result.ok ? result.data : null;
+
+  // この日が、ほかの日の大会の予備日になっているか（大会の日は最大45日前まで見る）
+  let reserves: ReserveInfo[] = [];
+  if (valid) {
+    const from = new Date(Date.parse(`${date}T00:00:00Z`) - 45 * 86400000).toISOString().slice(0, 10);
+    const all = await loadDays(from);
+    if (all.ok) reserves = reservesByDate(all.data).get(date) ?? [];
+  }
+  if (day && reserves.length) {
+    const fromDate = reserves[0].fromDate;
+    day = { ...day, units: day.units.map((u) => (u.tournamentName ? { ...u, tournamentDate: fromDate } : u)) };
+  }
+  const heldPlan = heldPlanText(day?.units ?? []);
 
   return (
     <div className="page">
@@ -48,9 +63,10 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
           <p className="form-error">{result.message}</p>
         </div>
       ) : day ? (
-        <DivisionTabs key={day.date} date={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} />
+        <DivisionTabs key={day.date} date={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} reserves={reserves} heldPlan={heldPlan} />
       ) : (
         <div className="empty">
+          <ReserveBanner reserves={reserves} heldPlan={heldPlan} />
           <p>この日の活動はまだ登録されていません。</p>
           {valid && (
             <p className="muted">

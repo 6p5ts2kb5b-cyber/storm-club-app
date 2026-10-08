@@ -27,6 +27,9 @@ export interface UnitRow {
   tournament_name: string | null;
   tournament_state: "pending" | "held" | "not_held" | "postponed" | null;
   tournament_date: string | null;
+  reserve_date: string | null;
+  reserve_name: string | null;
+  reserve_venue: string | null;
   note: string | null;
   grounds?: Ground[];
   games?: {
@@ -62,10 +65,10 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,tournament_name,tournament_state,tournament_date,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,umpire_system,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,tournament_name,tournament_state,tournament_date,reserve_date,reserve_name,reserve_venue,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,umpire_system,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
 
 // 0009（3チーム対応）のSQLがまだのときも、画面が真っ白にならないように、古い項目だけで読み直す
-const DAY_SELECT_OLD = DAY_SELECT.replace("storm_plays,opponent2,umpire_team,", "").replace("tournament_name,tournament_state,tournament_date,", "");
+const DAY_SELECT_OLD = DAY_SELECT.replace("storm_plays,opponent2,umpire_team,", "").replace("tournament_name,tournament_state,tournament_date,reserve_date,reserve_name,reserve_venue,", "");
 
 const DIVISION_ORDER: Division[] = ["top", "academy", "storm"];
 
@@ -99,7 +102,9 @@ function unitToSummary(u: UnitRow): UnitSummary {
     gatherPlace: u.gather_place ?? undefined,
     tournamentName: u.tournament_name ?? undefined,
     tournamentState: u.tournament_name ? (u.tournament_state ?? "pending") : undefined,
-    tournamentDate: u.tournament_name ? (u.tournament_date ?? undefined) : undefined,
+    reserveDate: u.reserve_date ?? undefined,
+    reserveName: u.reserve_name ?? undefined,
+    reserveVenue: u.reserve_venue ?? undefined,
     grounds,
     ...deriveGround(grounds),
     coaches: coachRows.map(staffName),

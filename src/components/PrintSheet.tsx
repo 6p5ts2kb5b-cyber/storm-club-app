@@ -27,7 +27,7 @@ function Group({ g }: { g: PrintGroup }) {
         <b className={g.rest ? "pl-rest" : undefined}>{g.title}</b>
         {g.rest && g.notes[0] && <span className="pl-why">{g.notes[0]}</span>}
       </p>
-      {(g.lines.length > 0 || g.games.length > 0) && (
+      {(g.lines.length > 0 || g.games.length > 0 || g.reserve) && (
         <dl className="pl-dl">
           {g.lines.slice(0, 1).map((l) => (
             <Line key={l.k} k={l.k} v={l.v} strong={l.strong} />
@@ -50,6 +50,7 @@ function Group({ g }: { g: PrintGroup }) {
               </dd>
             </>
           )}
+          {g.reserve && <Line k="予備日" v={g.reserve} />}
         </dl>
       )}
       {!g.rest && g.notes.map((n, i) => (
@@ -266,6 +267,19 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                       <span className={r.sat ? "pl-sat" : r.sun ? "pl-sun" : undefined}>{r.weekday}</span>
                     </td>
                     <td className="pl-main">
+                      {r.reserves.map((x) => (
+                        <div key={x.heading} className="pl-reserve">
+                          <p className="pl-reserve__head">☂ {x.heading}</p>
+                          <p>
+                            <span>延期のとき</span>
+                            {x.postponed}
+                          </p>
+                          <p>
+                            <span>実施のとき</span>
+                            <b>{x.held}</b>
+                          </p>
+                        </div>
+                      ))}
                       {r.groups.map((g) => (
                         <Group key={g.key} g={g} />
                       ))}
