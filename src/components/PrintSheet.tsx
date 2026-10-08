@@ -1,6 +1,6 @@
 "use client";
 
-// 保護者配布用の月間予定表：送り先・月・期間を選ぶと、A4の見本がすぐ変わる
+// スタッフ用の月間予定表：送り先・月・期間を選ぶと、A4の見本がすぐ変わる
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DIVISION_LABEL, type Division } from "@/lib/divisions";
 import { AUDIENCES, audienceName, buildRows, PERIOD_LABEL, type Period, type PrintGroup, sheetTitle } from "@/lib/print-plan";
@@ -234,7 +234,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
         </section>
 
         <label className="pr-block field">
-          <span className="field__label">保護者へのひとこと（任意・紙の一番下に載ります）</span>
+          <span className="field__label">ひとこと連絡（任意・紙の一番下に載ります）</span>
           <textarea
             className="input input--area"
             rows={2}
