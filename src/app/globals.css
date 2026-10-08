@@ -3939,3 +3939,7 @@ select.input {
   border-color: var(--go);
   background: var(--go-tint);
 }
+
+.draft-grid .field--wide {
+  grid-column: 1 / -1;
+}

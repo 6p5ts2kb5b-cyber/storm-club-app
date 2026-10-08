@@ -372,6 +372,15 @@ export default function ImportFlow({ existing, demo }: { existing: DaySummary[];
                         ))}
                       </select>
                     </label>
+                    <label className="field field--wide">
+                      <span className="field__label">大会しだいで休みになる？（任意）</span>
+                      <input
+                        className="input"
+                        value={u.tournament}
+                        onChange={(e) => patch(u.key, { tournament: e.target.value })}
+                        placeholder="例：STORM杯・JJBF大会（実施されたら休み）"
+                      />
+                    </label>
                     {u.umpireNeeded > 0 && (
                       <label className="field">
                         <span className="field__label">審判集合</span>

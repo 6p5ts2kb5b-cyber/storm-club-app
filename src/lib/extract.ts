@@ -20,6 +20,8 @@ export interface DraftUnit {
   umpireGather: string; // "08:00" または ""（空なら第1試合から自動計算）
   games: { start: string; opponent: string }[];
   note: string;
+  /** 大会しだいで変わる予定の大会名（例：STORM杯・JJBF大会）。空なら通常の予定 */
+  tournament: string;
   /** AIが「ここは自信がない」と言った点 */
   unsure: string;
 }
@@ -56,6 +58,7 @@ export const RESPONSE_SCHEMA = {
             },
           },
           note: { type: "STRING", nullable: true },
+          tournament_name: { type: "STRING", nullable: true },
           unsure: { type: "STRING", nullable: true },
         },
         required: ["date", "division", "games"],
@@ -82,6 +85,7 @@ export function buildPrompt(today: string): string {
 - umpire_gather_time：審判の集合時間が書かれていれば
 - games：試合ごとの開始時間と対戦相手（第1試合から順番に）
 - note：上に当てはまらない大事な連絡（持ち物、駐車場、雨天時など）を短く
+- tournament_name：「STORM杯・JJBF大会が実施されたら休み」「大会がなければ練習」のように、大会の実施しだいで休みか練習かが変わる予定のとき、その大会名（例：STORM杯・JJBF大会）。そうでなければ null。この場合、venue・player_gather_time などは「実施されなかった場合の練習」の内容を入れる
 - unsure：読み取りに自信がない点があれば短く（例：「日付の数字がかすれている」）
 
 ルール：
@@ -164,6 +168,7 @@ export function normalize(raw: unknown): ExtractResult {
       umpireGather: time(r.umpire_gather_time),
       games,
       note: text(r.note),
+      tournament: text(r.tournament_name, 40),
       unsure: text(r.unsure),
     });
   }

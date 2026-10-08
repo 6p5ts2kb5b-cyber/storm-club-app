@@ -100,10 +100,25 @@ export async function saveImport(drafts: DraftUnit[], existing: DaySummary[]): P
         if (manual) patch.umpire_gather_time = manual;
       }
       if (u.note && (fresh || !unit.note)) patch.note = u.note;
+      // 大会しだいの予定は、新しく作る日だけ設定する（実施は「確認中」から始める）
+      const withTournament = Boolean(u.tournament && fresh);
+      if (withTournament) {
+        patch.tournament_name = u.tournament;
+        patch.tournament_state = "pending";
+      }
       if (!fresh && u.activityType && !before?.activityType) patch.activity_type = u.activityType;
 
       if (Object.keys(patch).length) {
-        const { error: e } = await supabase.from("activity_units").update(patch).eq("id", unit.id);
+        let { error: e } = await supabase.from("activity_units").update(patch).eq("id", unit.id);
+        if (e && withTournament) {
+          // データベースの更新（0010）がまだのときは、大会の設定を外して保存し直す
+          const { tournament_name: _n, tournament_state: _s, ...rest } = patch;
+          void _n;
+          void _s;
+          if (Object.keys(rest).length) ({ error: e } = await supabase.from("activity_units").update(rest).eq("id", unit.id));
+          else e = null;
+          if (!e) report.skipped.push(`${label} ${DIVISION_LABEL[u.division]}：大会しだいの設定は保存できませんでした（0010のSQLがまだです）`);
+        }
         if (e) {
           report.errors.push(`${label} ${DIVISION_LABEL[u.division]}：内容を保存できませんでした。`);
           continue;
