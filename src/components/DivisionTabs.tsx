@@ -114,15 +114,15 @@ export default function DivisionTabs({
     return true;
   }
 
-  async function changeTournament(name: string | null, state: TournamentState): Promise<boolean> {
+  async function changeTournament(name: string | null, state: TournamentState, reserveOf: string | null): Promise<boolean> {
     if (!unit) return false;
-    const patch = { tournamentName: name ?? undefined, tournamentState: name ? state : undefined };
+    const patch = { tournamentName: name ?? undefined, tournamentState: name ? state : undefined, tournamentDate: name && reserveOf ? reserveOf : undefined };
     if (demo || !unit.id) {
       patchActive(patch);
       showToast("ok", "保存しました（お試しモード）");
       return true;
     }
-    const result = await saveTournament(unit.id, name, state);
+    const result = await saveTournament(unit.id, name, state, reserveOf);
     if (!result.ok) {
       showToast("ng", result.message);
       return false;
@@ -201,6 +201,7 @@ export default function DivisionTabs({
             key={`event-${unit.division}`}
             name={unit.tournamentName}
             state={unit.tournamentState}
+            reserveOf={unit.tournamentDate}
             isAdmin={isAdmin}
             onSave={changeTournament}
           />

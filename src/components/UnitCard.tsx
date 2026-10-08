@@ -4,7 +4,7 @@
 //   下段：項目ごとのランプ（緑＝決定・黄＝確認中・赤＝未確定）
 import Lamp from "@/components/Lamp";
 import { DIVISION_LABEL, formatTime } from "@/lib/divisions";
-import { checkUnit, isRest, type Level, type UnitSummary, worstLevel } from "@/lib/status";
+import { checkUnit, isRest, type Level, reserveText, type UnitSummary, worstLevel } from "@/lib/status";
 
 /** 時刻のマス目に並べる内容 */
 function lineScore(unit: UnitSummary) {
@@ -69,7 +69,7 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
         </header>
         <div className="rest">
           <span className="rest__word">休み</span>
-          <span className="rest__why">{unit.tournamentName}が実施されるため、この日の練習はありません。</span>
+          <span className="rest__why">{reserveText(unit) ? `${reserveText(unit)}。大会が実施されたため、この日は休養日です。` : `${unit.tournamentName}が実施されるため、この日の練習はありません。`}</span>
         </div>
       </section>
     );
@@ -91,9 +91,10 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
 
       {unit.tournamentName && (
         <p className={`board__cond board__cond--${unit.tournamentState ?? "pending"}`}>
+          {reserveText(unit) ? `☂ ${reserveText(unit)}／` : ""}
           {unit.tournamentState === "not_held"
             ? `${unit.tournamentName}は実施されないので、練習です`
-            : `${unit.tournamentName}が実施されたら休み／実施されなければ練習`}
+            : `${unit.tournamentName}が実施されたら休養日／実施されなければ練習`}
         </p>
       )}
 

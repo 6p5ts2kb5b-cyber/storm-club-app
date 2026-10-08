@@ -3,7 +3,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, formatDateLong, formatTime } from "./divisions";
-import { isRest, type UnitSummary } from "./status";
+import { isRest, reserveText, type UnitSummary } from "./status";
 import {
   isFilled,
   matchupText,
@@ -23,7 +23,7 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
 
   if (isRest(unit)) {
     lines.push(`■休み`);
-    lines.push(`${unit.tournamentName}が実施されるため、この日の練習はありません。`);
+    lines.push(`${reserveText(unit) ? `${reserveText(unit)}です。` : ""}${unit.tournamentName}が実施されたため、この日は休養日（練習はありません）です。`);
     if (unit.note) {
       lines.push("");
       lines.push("■連絡");
@@ -32,7 +32,7 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
     return lines.join("\n");
   }
   if (unit.tournamentName && unit.tournamentState !== "not_held") {
-    lines.push(`※${unit.tournamentName}が実施される場合は休みです。実施されない場合は、下の予定で練習をします。決まり次第あらためて連絡します。`);
+    lines.push(`※${reserveText(unit) ? `${reserveText(unit)}です。` : ""}${unit.tournamentName}が実施される場合は休養日です。実施されない場合は、下の予定で練習をします。決まり次第あらためて連絡します。`);
     lines.push("");
   }
 

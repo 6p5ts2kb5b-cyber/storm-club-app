@@ -4,7 +4,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
-import { type DaySummary, isRest, type UnitSummary } from "./status";
+import { type DaySummary, isRest, reserveText, type UnitSummary } from "./status";
 
 /** 送り先のよく使う組み合わせ */
 export const AUDIENCES: { key: string; label: string; divisions: Division[] }[] = [
@@ -87,11 +87,11 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
       key: u.division,
       division: u.division,
       showDivision,
-      title: "休み",
+      title: "休養日",
       rest: true,
       lines: [],
       games: [],
-      notes: [`${u.tournamentName}が実施されるため`],
+      notes: [reserveText(u) ? `${reserveText(u)}（大会が実施されたため）` : `${u.tournamentName}が実施されるため`],
     };
   }
 
@@ -117,7 +117,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
   const notes: string[] = [];
   if (u.note) notes.push(u.note);
   if (u.tournamentName && u.tournamentState !== "not_held") {
-    notes.push(`${u.tournamentName}が実施される場合は休みです。決まり次第ご連絡します。`);
+    notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が実施される場合は休養日、実施されない場合は練習です。決まり次第ご連絡します。`);
   }
 
   return {

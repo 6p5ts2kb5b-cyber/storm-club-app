@@ -15,13 +15,15 @@ const CHOICES: { state: TournamentState; title: string; sub: string }[] = [
 export default function TournamentPanel({
   name,
   state,
+  reserveOf,
   isAdmin,
   onSave,
 }: {
   name?: string;
   state?: TournamentState;
+  reserveOf?: string;
   isAdmin: boolean;
-  onSave: (name: string | null, state: TournamentState) => Promise<boolean>;
+  onSave: (name: string | null, state: TournamentState, reserveOf: string | null) => Promise<boolean>;
 }) {
   const [text, setText] = useState(name ?? DEFAULT_TOURNAMENT);
   const [busy, setBusy] = useState(false);
@@ -31,9 +33,9 @@ export default function TournamentPanel({
   // 管理者以外は、設定されているときだけ見る
   if (!on && !isAdmin) return null;
 
-  async function save(n: string | null, s: TournamentState) {
+  async function save(n: string | null, s: TournamentState, r: string | null = reserveOf ?? null) {
     setBusy(true);
-    await onSave(n, s);
+    await onSave(n, s, r);
     setBusy(false);
   }
 
@@ -46,7 +48,7 @@ export default function TournamentPanel({
         <p className="muted tour-note">
           「大会が実施されたら休み、実施されなければ練習」のように、大会の実施で予定が変わる日は、ここで設定します。
         </p>
-        <button type="button" className="btn btn--block btn--outline" disabled={busy} onClick={() => save(text.trim() || DEFAULT_TOURNAMENT, "pending")}>
+        <button type="button" className="btn btn--block btn--outline" disabled={busy} onClick={() => save(text.trim() || DEFAULT_TOURNAMENT, "pending", null)}>
           ＋ 大会しだいの予定にする
         </button>
       </section>
@@ -58,7 +60,7 @@ export default function TournamentPanel({
       <div className="panel__row">
         <h2 className="panel__title">大会しだいの予定</h2>
         {isAdmin && (
-          <button type="button" className="tour-off" disabled={busy} onClick={() => save(null, "pending")}>
+          <button type="button" className="tour-off" disabled={busy} onClick={() => save(null, "pending", null)}>
             設定をやめる
           </button>
         )}
@@ -74,6 +76,18 @@ export default function TournamentPanel({
           onBlur={() => text.trim() && text.trim() !== name && save(text.trim(), state ?? "pending")}
           placeholder={DEFAULT_TOURNAMENT}
         />
+      </label>
+
+      <label className="field">
+        <span className="field__label">予備日の設定（任意）：この日は、何日の大会の予備日？</span>
+        <input
+          type="date"
+          className="input"
+          value={reserveOf ?? ""}
+          disabled={!isAdmin || busy}
+          onChange={(e) => save(name ?? text, state ?? "pending", e.target.value || null)}
+        />
+        <span className="field__hint">入れると、「10/11 {name} の予備日」と表示され、印刷する予定表にも載ります。</span>
       </label>
 
       <div className="field">
@@ -101,7 +115,7 @@ export default function TournamentPanel({
 
       <p className="muted tour-note">
         {state === "held"
-          ? "大会が実施されるので、この日は「休み」と表示されます。"
+          ? "大会が実施されたので、この日は「休養日」です。"
           : state === "not_held"
             ? "大会は実施されないので、通常どおり練習の準備を進めます。"
             : "実施が決まるまでは「確認中」と表示します。実施されないときの練習の会場・時間は、下で先に入れておけます。"}

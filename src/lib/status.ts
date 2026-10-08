@@ -36,6 +36,12 @@ export const TOURNAMENT_STATE_LABEL: Record<TournamentState, string> = {
 };
 
 /** 大会が実施されるため、この日が「休み」になっているか */
+/** 「10/11 STORM杯・JJBF大会 の予備日」のような言い方（予備日でなければ空） */
+export function reserveText(u: { tournamentName?: string; tournamentDate?: string }): string {
+  if (!u.tournamentName || !u.tournamentDate) return "";
+  return `${Number(u.tournamentDate.slice(5, 7))}/${Number(u.tournamentDate.slice(8, 10))} ${u.tournamentName} の予備日`;
+}
+
 export function isRest(u: Pick<UnitSummary, "tournamentName" | "tournamentState">): boolean {
   return Boolean(u.tournamentName) && u.tournamentState === "held";
 }
@@ -94,6 +100,8 @@ export interface UnitSummary {
   tournamentName?: string;
   /** pending=確認中 / held=実施される（→休み） / not_held=実施されない（→練習） */
   tournamentState?: TournamentState;
+  /** その大会の本来の日（この日がその「予備日」のとき）例：2026-10-11 */
+  tournamentDate?: string;
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }
