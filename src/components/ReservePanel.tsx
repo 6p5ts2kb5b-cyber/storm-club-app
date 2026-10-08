@@ -2,6 +2,8 @@
 
 // 大会の予備日を入れる：予備日の日付・表示名・予備日の会場（ちがう場合だけ）
 import { useEffect, useState } from "react";
+import TournamentNameChips from "@/components/TournamentNameChips";
+import type { TournamentOption } from "@/lib/data";
 import { mdw } from "@/lib/reserve";
 
 export default function ReservePanel({
@@ -10,6 +12,8 @@ export default function ReservePanel({
   venue,
   umpires,
   umpireChoices,
+  tournaments = [],
+  demo = false,
   defaultName,
   venueChoices,
   isAdmin,
@@ -22,6 +26,8 @@ export default function ReservePanel({
   umpires: string[];
   /** 選べる審判（名前） */
   umpireChoices: string[];
+  tournaments?: TournamentOption[];
+  demo?: boolean;
   /** 表示名の見本（活動の種類） */
   defaultName: string;
   /** 会場の候補（候補グラウンドの名前など） */
@@ -91,9 +97,10 @@ export default function ReservePanel({
       {d && (
         <>
           <label className="field">
-            <span className="field__label">予備日での呼び名（任意）</span>
+            <span className="field__label">予備日での呼び名（任意・大会名を選んで「1日目」などを足せます）</span>
             <input className="input" value={n} disabled={busy} onChange={(e) => setN(e.target.value)} placeholder={`例：${defaultName || "JJBF 1日目"}`} />
           </label>
+          <TournamentNameChips names={tournaments} value={n} isAdmin={isAdmin} demo={demo} disabled={busy} onPick={setN} />
           <label className="field">
             <span className="field__label">予備日の会場（ちがう場合だけ）</span>
             <input className="input" value={v} disabled={busy} onChange={(e) => setV(e.target.value)} placeholder="空なら、この日と同じ会場" />

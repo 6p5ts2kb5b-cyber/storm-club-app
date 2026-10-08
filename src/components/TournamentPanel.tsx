@@ -2,6 +2,8 @@
 
 // 大会しだいで変わる予定：「大会が実施されたら休み／実施されなければ練習」
 import { useEffect, useState } from "react";
+import TournamentNameChips from "@/components/TournamentNameChips";
+import type { TournamentOption } from "@/lib/data";
 import { type TournamentState } from "@/lib/status";
 
 export const DEFAULT_TOURNAMENT = "STORM杯・JJBF大会";
@@ -25,6 +27,8 @@ export default function TournamentPanel({
   name,
   state,
   reserved,
+  tournaments = [],
+  demo = false,
   isAdmin,
   onSave,
 }: {
@@ -32,6 +36,8 @@ export default function TournamentPanel({
   state?: TournamentState;
   /** この日が、ほかの日の大会の予備日になっているか */
   reserved?: boolean;
+  tournaments?: TournamentOption[];
+  demo?: boolean;
   isAdmin: boolean;
   onSave: (name: string | null, state: TournamentState) => Promise<boolean>;
 }) {
@@ -58,6 +64,7 @@ export default function TournamentPanel({
         <p className="muted tour-note">
           「大会が実施されたら休み、実施されなければ練習」のように、大会の実施で予定が変わる日は、ここで設定します。
         </p>
+        <TournamentNameChips names={tournaments} value={text} isAdmin={isAdmin} demo={demo} disabled={busy} onPick={setText} />
         <button type="button" className="btn btn--block btn--outline" disabled={busy} onClick={() => save(text.trim() || DEFAULT_TOURNAMENT, "pending")}>
           ＋ 大会しだいの予定にする
         </button>
@@ -87,6 +94,17 @@ export default function TournamentPanel({
           placeholder={DEFAULT_TOURNAMENT}
         />
       </label>
+      <TournamentNameChips
+        names={tournaments}
+        value={text}
+        isAdmin={isAdmin}
+        demo={demo}
+        disabled={busy}
+        onPick={(n) => {
+          setText(n);
+          if (n !== name) void save(n, state ?? "pending");
+        }}
+      />
 
       <div className="field">
         <span className="field__label">{name}は</span>

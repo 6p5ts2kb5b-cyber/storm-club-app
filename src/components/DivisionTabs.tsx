@@ -13,7 +13,7 @@ import UmpireSection from "@/components/UmpireSection";
 import UnitCard from "@/components/UnitCard";
 import { useToast } from "@/components/useToast";
 import { savePlayerGather, setCoach } from "@/lib/activity-actions";
-import type { StaffOption } from "@/lib/data";
+import type { StaffOption, TournamentOption } from "@/lib/data";
 import { DIVISION_LABEL } from "@/lib/divisions";
 import { deriveGround, type Ground } from "@/lib/grounds";
 import Lamp from "@/components/Lamp";
@@ -53,6 +53,7 @@ export default function DivisionTabs({
   demo,
   reserves = [],
   heldPlan = "休養日",
+  tournaments = [],
 }: {
   /** この活動日 "2026-10-11" */
   date: string;
@@ -67,6 +68,8 @@ export default function DivisionTabs({
   reserves?: ReserveInfo[];
   /** 予備日で大会が実施されたときの、この日の予定の文章 */
   heldPlan?: string;
+  /** 登録してある大会名 */
+  tournaments?: TournamentOption[];
 }) {
   const router = useRouter();
   const [units, setUnits] = useState<UnitSummary[]>(initialUnits);
@@ -239,6 +242,8 @@ export default function DivisionTabs({
             name={unit.tournamentName}
             state={unit.tournamentState}
             reserved={reserved}
+            tournaments={tournaments}
+            demo={demo}
             isAdmin={isAdmin}
             onSave={changeTournament}
           />
@@ -253,6 +258,8 @@ export default function DivisionTabs({
             name={unit.reserveName}
             venue={unit.reserveVenue}
             umpires={unit.reserveUmpires ?? []}
+            tournaments={tournaments}
+            demo={demo}
             umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
             defaultName={unit.activityType ?? ""}
             venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}

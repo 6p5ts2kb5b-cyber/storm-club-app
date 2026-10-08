@@ -3,7 +3,7 @@ import ActivityFormButton from "@/components/ActivityFormButton";
 import BigDate from "@/components/BigDate";
 import DivisionTabs from "@/components/DivisionTabs";
 import SampleBanner from "@/components/SampleBanner";
-import { currentRole, loadDay, loadDays, loadStaffOptions } from "@/lib/data";
+import { currentRole, loadDay, loadDays, loadStaffOptions, loadTournamentNames } from "@/lib/data";
 import ReserveBanner from "@/components/ReserveBanner";
 import { heldPlanText, type ReserveInfo, reservesByDate } from "@/lib/reserve";
 import { autoModeForDate } from "@/lib/divisions";
@@ -15,10 +15,11 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   const { date } = await params;
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(date);
   const demo = !isSupabaseConfigured;
-  const [result, role, staff] = await Promise.all([
+  const [result, role, staff, tournaments] = await Promise.all([
     valid ? loadDay(date) : Promise.resolve(null),
     currentRole(),
     loadStaffOptions(),
+    loadTournamentNames(),
   ]);
   const isAdmin = role === "admin";
   const canEdit = role === "admin" || role === "staff";
@@ -63,7 +64,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
           <p className="form-error">{result.message}</p>
         </div>
       ) : day ? (
-        <DivisionTabs key={day.date} date={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} reserves={reserves} heldPlan={heldPlan} />
+        <DivisionTabs key={day.date} date={day.date} units={day.units} staff={staff} isAdmin={isAdmin} canEdit={canEdit} demo={demo} reserves={reserves} heldPlan={heldPlan} tournaments={tournaments} />
       ) : (
         <div className="empty">
           <ReserveBanner reserves={reserves} heldPlan={heldPlan} />

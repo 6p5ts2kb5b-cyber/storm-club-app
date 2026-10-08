@@ -261,3 +261,23 @@ export async function deleteGame(id: string): Promise<ActionResult> {
   const { error } = await supabase.rpc("delete_game", { p_game_id: id });
   return error ? { ok: false, message: explainGame(error) } : { ok: true };
 }
+
+/** 大会名を登録する（管理者だけ） */
+export async function addTournamentName(name: string): Promise<ActionResult & { id?: string }> {
+  const n = name.trim().slice(0, 40);
+  if (!n) return { ok: false, message: "大会名を入力してください。" };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("tournaments").insert({ name: n }).select("id").single();
+  if (error && (error.code === "23505" || /duplicate/i.test(error.message ?? ""))) return { ok: true };
+  if (error && /relation|schema cache|does not exist/i.test(error.message ?? "")) {
+    return { ok: false, message: "データベースの更新（0015）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+  }
+  return error ? { ok: false, message: explain(error) } : { ok: true, id: data?.id as string };
+}
+
+/** 登録した大会名を消す（管理者だけ。すでに使っている予定の名前はそのまま残ります） */
+export async function removeTournamentName(id: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const { error } = await supabase.from("tournaments").delete().eq("id", id);
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}
