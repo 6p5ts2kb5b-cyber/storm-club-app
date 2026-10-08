@@ -119,7 +119,7 @@ export async function savePlayerGather(unitId: string, time: string | null, plac
 export async function saveTournament(
   unitId: string,
   name: string | null,
-  state: "pending" | "held" | "not_held",
+  state: "pending" | "held" | "not_held" | "postponed",
   reserveOf: string | null = null,
 ): Promise<ActionResult> {
   const supabase = createClient();
@@ -128,7 +128,7 @@ export async function saveTournament(
     .update({ tournament_name: name && name.trim() ? name.trim() : null, tournament_state: state, tournament_date: name && reserveOf ? reserveOf : null })
     .eq("id", unitId);
   if (error && /column|schema cache/i.test(error.message ?? "")) {
-    return { ok: false, message: "データベースの更新（0010・0011）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+    return { ok: false, message: "データベースの更新（0010〜0012）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
   }
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }

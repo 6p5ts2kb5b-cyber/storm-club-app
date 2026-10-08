@@ -27,12 +27,13 @@ export interface Game {
   note?: string;
 }
 
-export type TournamentState = "pending" | "held" | "not_held";
+export type TournamentState = "pending" | "held" | "not_held" | "postponed";
 
 export const TOURNAMENT_STATE_LABEL: Record<TournamentState, string> = {
   pending: "確認中",
   held: "実施される → 休み",
   not_held: "実施されない → 練習",
+  postponed: "延期 → この日に大会",
 };
 
 /** 大会が実施されるため、この日が「休み」になっているか */
@@ -134,7 +135,9 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
   // 大会しだいの予定：実施されるかどうか
   if (u.tournamentName) {
     items.push(
-      u.tournamentState === "not_held"
+      u.tournamentState === "postponed"
+        ? { key: "tournament", label: "大会", level: "ok", text: `${u.tournamentName} 延期 → この日に大会` }
+        : u.tournamentState === "not_held"
         ? { key: "tournament", label: "大会", level: "ok", text: `${u.tournamentName}なし → 練習` }
         : { key: "tournament", label: "大会", level: "warn", text: `${u.tournamentName}の実施 確認中` },
     );

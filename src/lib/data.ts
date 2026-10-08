@@ -25,7 +25,7 @@ export interface UnitRow {
   umpire_offset_min: number;
   umpire_gather_time: string | null;
   tournament_name: string | null;
-  tournament_state: "pending" | "held" | "not_held" | null;
+  tournament_state: "pending" | "held" | "not_held" | "postponed" | null;
   tournament_date: string | null;
   note: string | null;
   grounds?: Ground[];

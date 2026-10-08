@@ -116,7 +116,9 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
 
   const notes: string[] = [];
   if (u.note) notes.push(u.note);
-  if (u.tournamentName && u.tournamentState !== "not_held") {
+  if (u.tournamentName && u.tournamentState === "postponed") {
+    notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が延期になったため、この日に大会を行います。`);
+  } else if (u.tournamentName && u.tournamentState !== "not_held") {
     notes.push(`${reserveText(u) ? `${reserveText(u)}。` : ""}${u.tournamentName}が実施される場合は休養日、実施されない場合は練習です。決まり次第ご連絡します。`);
   }
 

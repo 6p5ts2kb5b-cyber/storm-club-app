@@ -92,14 +92,16 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
       {unit.tournamentName && (
         <p className={`board__cond board__cond--${unit.tournamentState ?? "pending"}`}>
           {reserveText(unit) ? `☂ ${reserveText(unit)}／` : ""}
-          {unit.tournamentState === "not_held"
+          {unit.tournamentState === "postponed"
+            ? `${unit.tournamentName}は延期になったので、この日に大会です`
+            : unit.tournamentState === "not_held"
             ? `${unit.tournamentName}は実施されないので、練習です`
             : `${unit.tournamentName}が実施されたら休養日／実施されなければ練習`}
         </p>
       )}
 
       <p className="board__venue">
-        <span className="board__venue-label">{unit.tournamentName && unit.tournamentState !== "not_held" ? "練習の会場" : "会場"}</span>
+        <span className="board__venue-label">{unit.tournamentName && unit.tournamentState !== "not_held" && unit.tournamentState !== "postponed" ? "練習の会場" : "会場"}</span>
         {unit.venue ?? <span className="board__dim">未定</span>}
       </p>
 

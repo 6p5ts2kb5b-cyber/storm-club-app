@@ -70,6 +70,7 @@ STORMクラブの活動準備（グラウンド・選手集合時間・指導者
 9. `0009_game_matchup.sql` … 3チーム以上の試合（STORMが出ない試合・審判を出すチーム名）
 10. `0010_tournament_condition.sql` … 大会しだいで変わる予定（実施→休み／実施なし→練習）
 11. `0011_tournament_reserve_date.sql` … 大会の予備日（この日は何日の大会の予備日か）
+12. `0012_tournament_postponed.sql` … 予備日に大会を行う（延期）を選べるようにする
 
 ## 保護者配布用の予定表（/print）
 

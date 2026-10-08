@@ -10,6 +10,7 @@ const CHOICES: { state: TournamentState; title: string; sub: string }[] = [
   { state: "pending", title: "確認中", sub: "まだ分からない" },
   { state: "held", title: "実施される", sub: "→ 休み" },
   { state: "not_held", title: "実施されない", sub: "→ 練習" },
+  { state: "postponed", title: "延期", sub: "→ この日に大会" },
 ];
 
 export default function TournamentPanel({
@@ -116,6 +117,8 @@ export default function TournamentPanel({
       <p className="muted tour-note">
         {state === "held"
           ? "大会が実施されたので、この日は「休養日」です。"
+          : state === "postponed"
+            ? "大会が延期になったので、この日に大会を行います。会場・試合は下で入れてください。"
           : state === "not_held"
             ? "大会は実施されないので、通常どおり練習の準備を進めます。"
             : "実施が決まるまでは「確認中」と表示します。実施されないときの練習の会場・時間は、下で先に入れておけます。"}
