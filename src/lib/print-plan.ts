@@ -4,6 +4,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
+import { holidayName, isHoliday } from "./holidays";
 import { heldPlanText, mdw, reserveHeading, reservesByDate, umpireStatusText } from "./reserve";
 import { type DaySummary, isRest, reserveText, restWhy, type UnitSummary } from "./status";
 
@@ -14,12 +15,26 @@ export const AUDIENCES: { key: string; label: string; divisions: Division[] }[] 
   { key: "academy", label: "アカデミー", divisions: ["storm", "academy"] },
 ];
 
-export type Period = "month" | "first" | "second";
+export type Period = "month" | "first" | "second" | "week" | "nextWeek" | "weekend" | "nextWeekend";
 
 export const PERIOD_LABEL: Record<Period, string> = {
   month: "1カ月",
   first: "前半（1〜15日）",
   second: "後半（16日〜末日）",
+  week: "今週（月〜日）",
+  nextWeek: "来週（月〜日）",
+  weekend: "今週末（土日＋つながる祝日）",
+  nextWeekend: "来週末（土日＋つながる祝日）",
+};
+
+export const PERIOD_SHORT: Record<Period, string> = {
+  month: "1カ月",
+  first: "前半",
+  second: "後半",
+  week: "今週",
+  nextWeek: "来週",
+  weekend: "今週末",
+  nextWeekend: "来週末",
 };
 
 /** その月の最終日（2月は28/29日を自動で） */
@@ -29,18 +44,55 @@ export function lastDayOf(year: number, month: number): number {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** 期間の最初の日と最後の日（"2026-11-01" 形式） */
-export function periodRange(year: number, month: number, period: Period): { from: string; to: string; fromDay: number; toDay: number } {
-  const last = lastDayOf(year, month);
-  const fromDay = period === "second" ? 16 : 1;
-  const toDay = period === "first" ? 15 : last;
-  return { from: `${year}-${pad(month)}-${pad(fromDay)}`, to: `${year}-${pad(month)}-${pad(toDay)}`, fromDay, toDay };
+function ymd(d: Date): string {
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return ymd(d);
 }
 
-/** 紙の見出し：「STORM全体　2026年11月前半（1日〜15日）の活動予定」 */
-export function sheetTitle(audience: string, year: number, month: number, period: Period): string {
-  const { fromDay, toDay } = periodRange(year, month, period);
-  const part = period === "first" ? `前半（${fromDay}日〜${toDay}日）` : period === "second" ? `後半（${fromDay}日〜${toDay}日）` : "";
+/** 載せる日のリスト（"2026-11-01" 形式）。月・前半・後半・週・週末を同じ仕組みで扱う */
+export function periodDates(today: string, year: number, month: number, period: Period): string[] {
+  const out: string[] = [];
+  if (period === "month" || period === "first" || period === "second") {
+    const last = lastDayOf(year, month);
+    const fromDay = period === "second" ? 16 : 1;
+    const toDay = period === "first" ? 15 : last;
+    for (let d = fromDay; d <= toDay; d++) out.push(`${year}-${pad(month)}-${pad(d)}`);
+    return out;
+  }
+  const wd = new Date(`${today}T00:00:00Z`).getUTCDay(); // 0=日
+  const monday = addDays(today, -((wd + 6) % 7) + (period === "nextWeek" || period === "nextWeekend" ? 7 : 0));
+  if (period === "week" || period === "nextWeek") {
+    for (let i = 0; i < 7; i++) out.push(addDays(monday, i));
+    return out;
+  }
+  const sat = addDays(monday, 5);
+  const sun = addDays(monday, 6);
+  out.push(sat, sun);
+  // 前の金曜・後ろの月曜…が祝日なら足す（3連休）
+  for (let d = addDays(sat, -1); isHoliday(d); d = addDays(d, -1)) out.unshift(d);
+  for (let d = addDays(sun, 1); isHoliday(d); d = addDays(d, 1)) out.push(d);
+  return out;
+}
+
+const mdwLabel = (date: string) => `${Number(date.slice(5, 7))}月${Number(date.slice(8))}日（${weekdayLabel(date)}）`;
+
+/** 紙の見出し：「STORM全体　2026年11月前半（1日〜15日）の活動予定」「STORM全体　今週末　10月10日（土）〜12日（月）の活動予定」 */
+export function sheetTitle(audience: string, dates: string[], year: number, month: number, period: Period): string {
+  if (dates.length === 0) return `${audience}　${year}年${month}月の活動予定`;
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  if (period === "week" || period === "nextWeek" || period === "weekend" || period === "nextWeekend") {
+    const lastText = first.slice(0, 7) === last.slice(0, 7) ? `${Number(last.slice(8))}日（${weekdayLabel(last)}）` : mdwLabel(last);
+    return `${audience}　${PERIOD_SHORT[period]}　${mdwLabel(first)}〜${lastText}の活動予定`;
+  }
+  const f = Number(first.slice(8));
+  const l = Number(last.slice(8));
+  const full = f === 1 && l === lastDayOf(year, month);
+  const part = period === "first" ? `前半（${f}日〜${l}日）` : period === "second" ? `後半（${f}日〜${l}日）` : full ? "" : `（${f}日〜${l}日）`;
   return `${audience}　${year}年${month}月${part}の活動予定`;
 }
 
@@ -85,11 +137,23 @@ export interface PrintRow {
   weekend: boolean;
   sat: boolean;
   sun: boolean;
+  /** 祝日の名前（祝日でなければ空） */
+  holiday: string;
+  /** 予定がまだ入っていない日（「未定」と載せる） */
+  blank: boolean;
   groups: PrintGroup[];
   /** 休みだけの日（細い1行にする） */
   quiet: boolean;
   /** この日が予備日になっている大会の案内（青い帯） */
-  reserves: { heading: string; postponed: string; held: string; umpires: string }[];
+  reserves: { heading: string; name: string; postponed: string; held: string; umpires: string }[];
+}
+
+/** 練習試合は「練習試合」ではなく「対 ○○・△△」（相手が決まっていれば） */
+function matchTitle(u: UnitSummary): string {
+  const type = u.activityType || "活動";
+  if (type !== "練習試合") return type;
+  const names = [...new Set(u.games.filter((g) => g.stormPlays !== false).flatMap((g) => [g.opponent]).filter(Boolean) as string[])];
+  return names.length ? `対 ${names.join("・")}` : type;
 }
 
 function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
@@ -155,7 +219,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     key: u.division,
     division: u.division,
     showDivision,
-    title: u.activityType || "活動",
+    title: matchTitle(u),
     rest: false,
     lines,
     games,
@@ -166,42 +230,46 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
   };
 }
 
-/** 期間・送り先に合う活動日を、印刷用の行にする */
-export function buildRows(days: DaySummary[], divisions: Division[], year: number, month: number, period: Period): PrintRow[] {
-  const { from, to } = periodRange(year, month, period);
+/** 載せる日のリストと送り先に合う活動日を、印刷用の行にする */
+export function buildRows(days: DaySummary[], divisions: Division[], dates: string[]): PrintRow[] {
   const wantsBothClubs = divisions.includes("top") && divisions.includes("academy");
   const reserveMap = reservesByDate(days);
   const rows: PrintRow[] = [];
 
-  // 予備日にあたる日（その日に予定が登録されていなくても行を作る）
-  const dates = new Set<string>(days.map((d) => d.date));
-  reserveMap.forEach((list, date) => {
-    if (list.some((r) => divisions.includes(r.division))) dates.add(date);
-  });
-
   for (const date of dates) {
-    if (date < from || date > to) continue;
     const d = days.find((x) => x.date === date);
     const units = (d?.units ?? []).filter((u) => divisions.includes(u.division));
     const reserves = (reserveMap.get(date) ?? []).filter((r) => divisions.includes(r.division));
-    if (units.length === 0 && reserves.length === 0) continue;
+    const wd = weekdayIndex(date);
+    const holiday = holidayName(date);
+    const off = wd === 0 || wd === 6 || holiday !== "";
+    const base = {
+      date,
+      day: Number(date.slice(8, 10)),
+      weekday: weekdayLabel(date),
+      weekend: off,
+      sat: wd === 6 && !holiday,
+      sun: wd === 0 || holiday !== "",
+      holiday,
+    };
+    if (units.length === 0 && reserves.length === 0) {
+      // 予定の無い日：土日・祝日は「未定」と載せる（入れ忘れが分かる）。平日は載せない
+      if (off) rows.push({ ...base, blank: true, groups: [], quiet: false, reserves: [] });
+      continue;
+    }
     const showDivision = (u: UnitSummary) => u.division !== "storm" && (units.length > 1 || wantsBothClubs);
     let groups = units.map((u) => groupOf(u, showDivision(u)));
     // 予備日の日の「休養日」は青い帯に出るので、重ねて出さない
     if (reserves.length && groups.every((g) => g.rest)) groups = [];
     const held = heldPlanText(units);
-    const wd = weekdayIndex(date);
     rows.push({
-      date,
-      day: Number(date.slice(8, 10)),
-      weekday: weekdayLabel(date),
-      weekend: wd === 0 || wd === 6,
-      sat: wd === 6,
-      sun: wd === 0,
+      ...base,
+      blank: false,
       groups,
       quiet: groups.length > 0 && groups.every((g) => g.rest),
       reserves: reserves.map((r) => ({
         heading: reserveHeading(r),
+        name: r.name,
         postponed: `${r.name}${r.venue ? `（${r.venue}）` : ""}`,
         held,
         umpires:
@@ -209,7 +277,43 @@ export function buildRows(days: DaySummary[], divisions: Division[], year: numbe
       })),
     });
   }
-  return rows.sort((a, b) => a.date.localeCompare(b.date));
+  return rows;
+}
+
+/** 「LINEに貼る文章」：予定表と同じ中身（持ち物は書かない） */
+export function buildPrintText(rows: PrintRow[], title: string, message: string): string {
+  const out: string[] = [`【${title.replace("　", " ")}】`, ""];
+  for (const r of rows) {
+    const head = `${Number(r.date.slice(5, 7))}/${r.day}（${r.weekday}${r.holiday ? `・${r.holiday}` : ""}）`;
+    if (r.blank) {
+      out.push(`${head} 未定`, "");
+      continue;
+    }
+    const allRest = r.groups.length > 0 && r.groups.every((g) => g.rest);
+    if (allRest && r.reserves.length === 0 && r.groups.length === 1) {
+      out.push(`${head} ${r.groups[0].showDivision ? `［${DIVISION_LABEL[r.groups[0].division]}］` : ""}休養日`, "");
+      continue;
+    }
+    out.push(head);
+    for (const x of r.reserves) {
+      out.push(`　☂ ${x.heading}`, `　${x.name}が延期された場合　${x.postponed}`);
+      if (x.umpires) out.push(`　　${x.umpires}`);
+      out.push(`　${x.name}が実施された場合　${x.held}`);
+    }
+    for (const g of r.groups) {
+      const tag = g.showDivision ? `［${DIVISION_LABEL[g.division]}］` : "";
+      out.push(`　${tag}${g.title}`);
+      for (const l of g.lines) out.push(`　　${l.k}　${l.v}`);
+      g.games.forEach((x, i) => out.push(`　　${"①②③④⑤⑥"[i] ?? i + 1}　${x.time}　${x.text}`));
+      for (const l of g.after) out.push(`　　${l.k}　${l.v}`);
+      if (g.reserve) out.push(`　　予備日　${g.reserve}`);
+      if (g.reserve2) out.push(`　　予備日の予備日　${g.reserve2}`);
+      if (!g.rest) for (const n of g.notes) out.push(`　　※${n}`);
+    }
+    out.push("");
+  }
+  if (message.trim()) out.push(message.trim());
+  return out.join("\n").trim();
 }
 
 /** 画面に出す「送り先」の名前（区分の組み合わせから） */

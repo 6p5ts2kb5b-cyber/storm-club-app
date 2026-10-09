@@ -140,16 +140,26 @@ export function toJpeg(c: HTMLCanvasElement): Promise<JpegPage> {
 }
 
 // 予定表（source）を PDF ファイルにする。行（tr）の途中ではページを切らない
-export async function elementToPdf(source: HTMLElement, filename: string): Promise<File> {
+// onePage = true のときは、長くても縮めてA4の1枚に収める。width：横幅を広げて組んでから縮める
+export async function elementToPdf(
+  source: HTMLElement,
+  filename: string,
+  opts: { onePage?: boolean; width?: number } = {},
+): Promise<File> {
   const html2canvas = await loadHtml2Canvas();
+  const W = opts.onePage && opts.width ? opts.width : PAGE_W;
   const host = document.createElement("div");
-  host.style.cssText = `position:fixed;left:-20000px;top:0;width:${PAGE_W}px;background:#fff;`;
+  host.style.cssText = `position:fixed;left:-20000px;top:0;width:${W}px;background:#fff;`;
   const clone = source.cloneNode(true) as HTMLElement;
   // 画面では縮めて見せているので、PDF用は元の大きさに戻す。PDFは余白なし
   clone.style.transform = "none";
   clone.style.margin = "0";
-  clone.style.width = `${PAGE_W}px`;
+  clone.style.width = `${W}px`;
   clone.style.padding = "6px";
+  clone.querySelectorAll<HTMLElement>(".pl-fit").forEach((el) => {
+    el.style.setProperty("--fit", "1");
+    el.style.removeProperty("width");
+  });
   host.appendChild(clone);
   document.body.appendChild(host);
   try {
@@ -160,9 +170,12 @@ export async function elementToPdf(source: HTMLElement, filename: string): Promi
       .map((el) => Math.round(el.getBoundingClientRect().bottom - top))
       .sort((a, b) => a - b);
 
-    // ページの区切りを決める
     const slices: [number, number][] = [];
     let start = 0;
+    if (opts.onePage) {
+      slices.push([0, total]);
+      start = total;
+    }
     while (start < total - 2) {
       const room = slices.length === 0 ? PAGE_H - MARGIN : PAGE_H - MARGIN * 2;
       let end = start + room;
@@ -176,19 +189,24 @@ export async function elementToPdf(source: HTMLElement, filename: string): Promi
     }
 
     const scale = 2;
-    const full = await html2canvas(clone, { scale, backgroundColor: "#ffffff", logging: false, windowWidth: PAGE_W });
-    const s = full.width / PAGE_W;
+    const full = await html2canvas(clone, { scale, backgroundColor: "#ffffff", logging: false, windowWidth: W });
+    const s = full.width / W;
     const pages: JpegPage[] = [];
     for (let i = 0; i < slices.length; i++) {
       const [a, b] = slices[i];
       const pad = i === 0 ? 0 : MARGIN;
       const c = document.createElement("canvas");
-      c.width = full.width;
-      c.height = Math.round(PAGE_H * s);
+      c.width = Math.round(PAGE_W * scale);
+      c.height = Math.round(PAGE_H * scale);
       const ctx = c.getContext("2d")!;
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, c.width, c.height);
-      ctx.drawImage(full, 0, Math.round(a * s), full.width, Math.round((b - a) * s), 0, Math.round(pad * s), full.width, Math.round((b - a) * s));
+      const srcH = Math.round((b - a) * s);
+      // 横幅をA4いっぱいに合わせる。1枚に収めるときは、縦がはみ出すならそのぶん縮める
+      let k = c.width / full.width;
+      if (opts.onePage && srcH * k > c.height) k = c.height / srcH;
+      const dw = Math.round(full.width * k);
+      ctx.drawImage(full, 0, Math.round(a * s), full.width, srcH, Math.round((c.width - dw) / 2), Math.round(pad * scale), dw, Math.round(srcH * k));
       pages.push(await toJpeg(c));
     }
     return new File([jpegPagesToPdf(pages)], filename, { type: "application/pdf" });

@@ -1,13 +1,29 @@
 "use client";
 
 // スタッフ用の月間予定表：送り先・月・期間を選ぶと、A4の見本がすぐ変わる
-import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIVISION_LABEL, type Division } from "@/lib/divisions";
-import { AUDIENCES, audienceName, buildRows, PERIOD_LABEL, type Period, type PrintGroup, sheetTitle } from "@/lib/print-plan";
+import {
+  AUDIENCES,
+  audienceName,
+  buildPrintText,
+  buildRows,
+  PERIOD_LABEL,
+  PERIOD_SHORT,
+  periodDates,
+  type Period,
+  type PrintGroup,
+  sheetTitle,
+} from "@/lib/print-plan";
 import { elementToPdf, hasPdfSupport, shareOrDownload } from "@/lib/sharePdf";
 import type { DaySummary } from "@/lib/status";
 
 const PAPER_W = 794; // A4の幅（画面のピクセル）
+// 印刷できる範囲：A4（794×1123px）から上下左右4mm（約15px）を引いた大きさ
+const FIT_W = 764;
+const FIT_H = 1090;
+const PERIODS: Period[] = ["month", "first", "second", "week", "nextWeek", "weekend", "nextWeekend"];
 const DIVISIONS: Division[] = ["storm", "top", "academy"];
 
 function monthChoices(today: string): { year: number; month: number }[] {
@@ -99,15 +115,69 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
   }, []);
 
   const name = audienceName(divisions);
-  const rows = useMemo(() => buildRows(days, divisions, ym.year, ym.month, period), [days, divisions, ym, period]);
-  const title = sheetTitle(name, ym.year, ym.month, period);
+  const [hidePast, setHidePast] = useState(false);
+  const [fitOne, setFitOne] = useState(true);
+  const [fit, setFit] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const fitBox = useRef<HTMLDivElement>(null);
+
+  const dates = useMemo(() => {
+    const all = periodDates(today, ym.year, ym.month, period);
+    return hidePast ? all.filter((d) => d >= today) : all;
+  }, [today, ym, period, hidePast]);
+  const rows = useMemo(() => buildRows(days, divisions, dates), [days, divisions, dates]);
+  const title = sheetTitle(name, dates, ym.year, ym.month, period);
+  const blankDays = rows.filter((r) => r.blank && r.date >= today);
+  const lineText = useMemo(() => buildPrintText(rows, title, message), [rows, title, message]);
+  const weekMode = period !== "month" && period !== "first" && period !== "second";
+
+  // A4の1枚にちょうど収まる倍率を測る（少ないと大きく最大1.8倍・多いと小さく最小0.45倍）
+  useLayoutEffect(() => {
+    const el = fitBox.current;
+    if (!el) return;
+    const host = document.createElement("div");
+    host.style.cssText = "position:fixed;left:-30000px;top:0;visibility:hidden;";
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.setProperty("--fit", "1");
+    clone.className = `${el.className} pr-paper`;
+    clone.style.padding = "0";
+    clone.style.position = "static";
+    clone.style.transform = "none";
+    host.appendChild(clone);
+    document.body.appendChild(host);
+    let f = 1;
+    for (let i = 0; i < 4; i++) {
+      clone.style.width = `${FIT_W / f}px`;
+      const next = Math.min(1.8, Math.max(0.45, (FIT_H / clone.offsetHeight) * 0.98));
+      const done = Math.abs(next - f) < 0.005;
+      f = next;
+      if (done) break;
+    }
+    host.remove();
+    setFit(Math.round(f * 1000) / 1000);
+  }, [rows, message, title]);
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(lineText);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = lineText;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand("copy");
+      t.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   // 内容が変わったら、作り済みのPDFは捨てる
   useEffect(() => {
     setPdf(null);
     setNeedRetry(false);
     setInfo(null);
-  }, [rows, title, message]);
+  }, [rows, title, message, fitOne, fit]);
 
   // 見本をスマホの幅に合わせて縮める
   useEffect(() => {
@@ -122,7 +192,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
     if (box.current) ro.observe(box.current);
     if (paper.current) ro.observe(paper.current);
     return () => ro.disconnect();
-  }, [rows, message, title]);
+  }, [rows, message, title, fit, fitOne]);
 
   function pickAudience(key: string) {
     const a = AUDIENCES.find((x) => x.key === key);
@@ -141,7 +211,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
     setBusy(true);
     setInfo(null);
     try {
-      const file = pdf ?? (await elementToPdf(paper.current, `${title}.pdf`));
+      const file = pdf ?? (await elementToPdf(paper.current, `${title}.pdf`, fitOne ? { onePage: true, width: Math.round(PAPER_W / fit) } : {}));
       setPdf(file);
       try {
         const r = await shareOrDownload(file, title);
@@ -205,7 +275,10 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                   type="button"
                   aria-pressed={on}
                   className={`pr-month${on ? " is-on" : ""}`}
-                  onClick={() => setYm(m)}
+                  onClick={() => {
+                    setYm(m);
+                    setPeriod("month");
+                  }}
                 >
                   <small>{m.year}</small>
                   <b>{m.month}月</b>
@@ -217,22 +290,56 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
 
         <section className="pr-block">
           <h2 className="field__label">期間</h2>
-          <div className="seg seg--3" role="radiogroup" aria-label="期間">
-            {(Object.keys(PERIOD_LABEL) as Period[]).map((p) => (
+          <div className="pr-chips" role="radiogroup" aria-label="期間">
+            {PERIODS.map((p) => (
               <button
                 key={p}
                 type="button"
                 role="radio"
                 aria-checked={period === p}
-                className={`seg__btn${period === p ? " is-active" : ""}`}
+                className={`pr-chip${period === p ? " is-on" : ""}`}
                 onClick={() => setPeriod(p)}
               >
-                {p === "month" ? "1カ月" : p === "first" ? "前半" : "後半"}
+                {PERIOD_SHORT[p]}
               </button>
             ))}
           </div>
           <p className="field__hint">{PERIOD_LABEL[period]}</p>
         </section>
+
+        <section className="pr-block">
+          <label className="pr-check">
+            <input type="checkbox" checked={fitOne} onChange={(e) => setFitOne(e.target.checked)} />
+            A4の1枚にちょうど収める
+            {fitOne && fit !== 1 ? `（${Math.round(fit * 100)}%に${fit > 1 ? "拡大" : "縮小"}）` : ""}
+          </label>
+          <label className="pr-check">
+            <input type="checkbox" checked={hidePast} onChange={(e) => setHidePast(e.target.checked)} />
+            過ぎた日は載せない
+          </label>
+        </section>
+
+        {blankDays.length > 0 && (
+          <div className="blank-warn">
+            <p className="blank-warn__title">⚠ まだ予定が入っていない日が{blankDays.length}日あります</p>
+            <p className="blank-warn__body">紙には「未定」と載ります。押すと、その日の予定を登録できます。</p>
+            <div className="pr-chips">
+              {blankDays.map((r) => (
+                <Link key={r.date} href={`/activities/${r.date}`} className="blank-warn__day">
+                  {Number(r.date.slice(5, 7))}/{r.day}（{r.weekday}）
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <details className="pr-linetext" open={weekMode && (period === "weekend" || period === "nextWeekend")}>
+          <summary>LINEに貼る文章</summary>
+          <pre>{lineText}</pre>
+          <button type="button" className="btn btn--block" onClick={copyText}>
+            {copied ? "コピーしました。LINEに貼り付けてください" : "文章をコピーする"}
+          </button>
+        </details>
 
         <label className="pr-block field">
           <span className="field__label">ひとこと連絡（任意・紙の一番下に載ります）</span>
@@ -250,6 +357,11 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
 
       <div className="pr-fit" ref={box} style={{ height: height || undefined }}>
         <article className="pr-paper" ref={paper} style={{ width: PAPER_W, transform: `scale(${scale})` }}>
+          <div
+            ref={fitBox}
+            className="pl-fit"
+            style={fitOne && fit !== 1 ? ({ "--fit": fit, width: `${Math.floor(FIT_W / fit)}px` } as React.CSSProperties) : undefined}
+          >
           <header className="pr-paper__head">
             <h2>{title}</h2>
           </header>
@@ -269,13 +381,15 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                     <td className="pl-day">
                       <b>{r.day}</b>
                       <span className={r.sat ? "pl-sat" : r.sun ? "pl-sun" : undefined}>{r.weekday}</span>
+                      {r.holiday && <small className="pl-holiday">{r.holiday}</small>}
                     </td>
                     <td className="pl-main">
+                      {r.blank && <p className="pl-blank">未定</p>}
                       {r.reserves.map((x) => (
                         <div key={x.heading} className="pl-reserve">
                           <p className="pl-reserve__head">☂ {x.heading}</p>
                           <p>
-                            <span>延期のとき</span>
+                            <span>{x.name}が延期された場合</span>
                             {x.postponed}
                           </p>
                           {x.umpires && (
@@ -285,7 +399,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                             </p>
                           )}
                           <p>
-                            <span>実施のとき</span>
+                            <span>{x.name}が実施された場合</span>
                             <b>{x.held}</b>
                           </p>
                         </div>
@@ -300,6 +414,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
             </table>
           )}
           {message.trim() && <p className="pr-paper__msg">{message.trim()}</p>}
+          </div>
         </article>
       </div>
 
