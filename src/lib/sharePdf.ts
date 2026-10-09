@@ -237,7 +237,13 @@ export async function elementToPdf(
     if (el.parentElement?.classList.contains("pl-fitwrap")) el.parentElement.style.removeProperty("height");
   });
   // PDFは余白なし：画面の見本の外側の余白を詰める
+  // 画面では縮めて見せている（transform）ので、PDF用は元の大きさに戻す
+  clone.style.transform = "none";
+  clone.style.margin = "0";
+  clone.style.position = "static";
+  clone.style.width = `${W}px`;
   clone.style.padding = "6px";
+  clone.style.minHeight = "0";
   host.appendChild(clone);
   document.body.appendChild(host);
   try {
