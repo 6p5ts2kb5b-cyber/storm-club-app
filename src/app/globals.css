@@ -4032,3 +4032,46 @@ select.input {
 .tname { display: grid; gap: 8px; margin-top: 6px; }
 .tname__item { display: inline-flex; align-items: center; gap: 2px; }
 .tname__x { min-width: 32px; min-height: 32px; border: 0; background: transparent; color: #888; font-size: 18px; cursor: pointer; }
+
+/* 活動一覧：日ごとのカード（日付のタイル・予定の中身・「今日／明日／N日後」） */
+.amonth { margin-top: 18px; }
+.amonth__head { display: flex; align-items: baseline; gap: 6px; margin: 0 0 10px; font-size: 18px; }
+.amonth__head b { font-family: var(--font-num), sans-serif; font-size: 34px; color: var(--board, #14342a); line-height: 1; }
+.amonth__head small { margin-left: auto; color: var(--ink-2, #555); font-size: 13px; font-weight: 600; }
+.alist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.acard {
+  position: relative; display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 14px 14px 14px 12px;
+  background: #fff; border: 1px solid var(--line, #d5dad5); border-radius: 16px; color: inherit; text-decoration: none;
+}
+.acard:hover { border-color: #9fb3a8; }
+.acard.is-today { border-color: #c0392b; box-shadow: 0 0 0 1px #c0392b inset; }
+.acard__date { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.acard__date b {
+  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 10px; background: var(--board, #14342a); color: #fff;
+  font-family: var(--font-num), sans-serif; font-size: 34px; line-height: 1;
+}
+.acard__date i { font-style: normal; font-weight: 800; font-size: 14px; }
+.acard__date i.is-sat { color: #1c5fb0; } .acard__date i.is-sun { color: #c0392b; }
+.acard__body { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.acard__badge {
+  position: absolute; top: 12px; right: 12px; padding: 2px 10px; border-radius: 999px; background: #8a2a2a; color: #fff;
+  font-size: 12px; font-weight: 800;
+}
+.acard__badge.is-near { background: #c0392b; }
+.acard__title { font-size: 20px; font-weight: 900; padding-right: 64px; }
+.acard__title small { margin-left: 8px; color: #666; font-size: 13px; font-weight: 700; }
+.acard__reserve { padding: 4px 10px; border-radius: 8px; background: #eaf2fd; color: #1c5fb0; font-weight: 800; font-size: 14px; width: fit-content; max-width: 100%; }
+.acard__unit { display: grid; gap: 4px; position: relative; }
+.acard__unit + .acard__unit { padding-top: 8px; border-top: 1px dashed var(--line, #d5dad5); }
+.acard__div { width: fit-content; padding: 0 8px; border: 1px solid var(--board, #14342a); border-radius: 4px; font-size: 12px; font-weight: 800; }
+.acard__dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; }
+.acard__dl dt { color: #666; font-size: 12px; padding-top: 3px; }
+.acard__dl dd { margin: 0; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.acard__gather { font-family: var(--font-num), sans-serif; font-size: 22px; line-height: 1.2; }
+.acard__game { display: block; font-weight: 700; }
+.acard__game b { display: inline-block; min-width: 4.2em; font-family: var(--font-num), sans-serif; font-size: 18px; }
+.acard__game.is-others { color: #8a8f8a; font-weight: 500; }
+.acard__more { color: #666; font-size: 12px; }
+.acard__rest { margin: 0; font-size: 20px; font-weight: 900; }
+.acard__rest small { margin-left: 8px; color: #666; font-size: 12px; font-weight: 600; }
+.acard__lamps { position: absolute; right: 0; bottom: 0; }
