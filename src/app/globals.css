@@ -4090,3 +4090,9 @@ select.input {
 .acard__reservebox .acard__reserve { padding: 0; background: none; }
 .acard__rline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; font-weight: 700; }
 .acard__rline small { min-width: 5.5em; color: #444; font-size: 12px; font-weight: 600; }
+
+/* 活動日の入力：区分ごと（トップ／アカデミー）のかたまり */
+.form-unit { display: grid; gap: 12px; margin: 14px 0; padding: 14px; border: 1.5px solid var(--line, #d5dad5); border-radius: 14px; background: #fff; }
+.form-unit--top { border-left: 6px solid #c0392b; }
+.form-unit--academy { border-left: 6px solid #1c5fb0; }
+.form-unit__title { margin: 0; font-size: 18px; font-weight: 900; }

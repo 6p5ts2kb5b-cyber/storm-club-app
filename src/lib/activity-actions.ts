@@ -1,10 +1,23 @@
 "use client";
 
 // 活動日の保存・削除（ブラウザからSupabaseへ）
-import { divisionsForMode, type DayMode, type Division } from "./divisions";
+import { DIVISION_LABEL, divisionsForMode, type DayMode, type Division } from "./divisions";
 import { createClient } from "./supabase/client";
 
 export const ACTIVITY_TYPES = ["練習試合", "公式戦", "大会", "練習", "その他"] as const;
+
+/** 区分（トップ／アカデミー／STORM）ごとの入力内容 */
+export interface UnitInput {
+  activityType: string;
+  venue: string;
+  /** 選手集合時間 "07:30"（未設定なら空） */
+  gatherTime: string;
+  /** 審判の人数（0 = 不要） */
+  umpireNeeded: number;
+  /** 指導者（スタッフの番号） */
+  coachIds: string[];
+  note: string;
+}
 
 export interface DayInput {
   date: string;
@@ -12,6 +25,22 @@ export interface DayInput {
   activityType: string;
   venues: Partial<Record<Division, string>>;
   note: string;
+  /** 区分ごとの入力（あれば、上の activityType・venues より優先） */
+  units?: Partial<Record<Division, UnitInput>>;
+}
+
+/** 区分ごとの入力を、データベースの列の形に直す */
+function unitValues(input: DayInput, division: Division) {
+  const u = input.units?.[division];
+  if (!u) return { activity_type: input.activityType, venue: clean(input.venues[division]) };
+  return {
+    activity_type: u.activityType,
+    venue: clean(u.venue),
+    player_gather_time: u.gatherTime || null,
+    umpire_required: u.umpireNeeded > 0,
+    umpire_needed_count: Math.max(0, Math.min(8, u.umpireNeeded)),
+    note: clean(u.note),
+  };
 }
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -29,6 +58,12 @@ const clean = (s: string | undefined) => (s && s.trim() ? s.trim() : null);
 /** 入力内容の確認 */
 export function validateDay(input: DayInput): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return "日付を選んでください。";
+  if (input.units) {
+    for (const d of divisionsForMode(input.mode)) {
+      if (!input.units[d]?.activityType) return `${DIVISION_LABEL[d]}の活動内容を選んでください。`;
+    }
+    return null;
+  }
   if (!input.activityType) return "活動内容を選んでください。";
   return null;
 }
@@ -46,10 +81,16 @@ export async function createDay(input: DayInput): Promise<ActionResult> {
   const rows = divisionsForMode(input.mode).map((division) => ({
     day_id: day.id,
     division,
-    activity_type: input.activityType,
-    venue: clean(input.venues[division]),
+    ...unitValues(input, division),
   }));
-  const { error: unitError } = await supabase.from("activity_units").insert(rows);
+  const { data: made, error: unitError } = await supabase.from("activity_units").insert(rows).select("id,division");
+  if (!unitError && input.units) {
+    // 指導者も、区分ごとに入れる
+    const coachRows = (made ?? []).flatMap((m: { id: string; division: Division }) =>
+      (input.units?.[m.division]?.coachIds ?? []).map((staff_id) => ({ unit_id: m.id, staff_id })),
+    );
+    if (coachRows.length) await supabase.from("coach_assignments").insert(coachRows);
+  }
   if (unitError) {
     // 途中で失敗したら、作りかけの活動日を消して元に戻す
     await supabase.from("activity_days").delete().eq("id", day.id);
@@ -73,17 +114,36 @@ export async function updateDay(dayId: string, input: DayInput): Promise<ActionR
 
   const { data: existing, error: readError } = await supabase
     .from("activity_units")
-    .select("id,division")
+    .select("id,division,coach_assignments(staff_id)")
     .eq("day_id", dayId);
   if (readError) return { ok: false, message: explain(readError) };
 
+  type Existing = { id: string; division: string; coach_assignments?: { staff_id: string }[] };
   for (const division of divisionsForMode(input.mode)) {
-    const found = (existing ?? []).find((u: { division: string }) => u.division === division);
-    const values = { activity_type: input.activityType, venue: clean(input.venues[division]) };
-    const { error: e } = found
-      ? await supabase.from("activity_units").update(values).eq("id", found.id)
-      : await supabase.from("activity_units").insert({ day_id: dayId, division, ...values });
-    if (e) return { ok: false, message: explain(e) };
+    const found = ((existing ?? []) as Existing[]).find((u) => u.division === division);
+    const values = unitValues(input, division);
+    let unitId = found?.id;
+    if (found) {
+      const { error: e } = await supabase.from("activity_units").update(values).eq("id", found.id);
+      if (e) return { ok: false, message: explain(e) };
+    } else {
+      const { data: made, error: e } = await supabase
+        .from("activity_units")
+        .insert({ day_id: dayId, division, ...values })
+        .select("id")
+        .single();
+      if (e) return { ok: false, message: explain(e) };
+      unitId = made?.id;
+    }
+    // 指導者：増えた人を入れ、外した人を消す
+    const want = input.units?.[division]?.coachIds;
+    if (want && unitId) {
+      const have = (found?.coach_assignments ?? []).map((c) => c.staff_id);
+      const add = want.filter((id) => !have.includes(id));
+      const drop = have.filter((id) => !want.includes(id));
+      if (add.length) await supabase.from("coach_assignments").insert(add.map((staff_id) => ({ unit_id: unitId, staff_id })));
+      for (const id of drop) await supabase.from("coach_assignments").delete().eq("unit_id", unitId).eq("staff_id", id);
+    }
   }
   return { ok: true };
 }

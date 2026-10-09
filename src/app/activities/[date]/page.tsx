@@ -47,7 +47,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
         <div className="dayhead__row">
           <h1>{valid ? <BigDate date={date} size="xl" /> : "活動日"}</h1>
           {day && isAdmin && (
-            <ActivityFormButton label="編集" className="btn" day={day} defaultDate={date} demo={demo} />
+            <ActivityFormButton label="編集" className="btn" day={day} defaultDate={date} demo={demo} staff={staff} />
           )}
         </div>
         {day && (
@@ -75,7 +75,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
             </p>
           )}
           {valid && isAdmin && (
-            <ActivityFormButton label="＋ この日に活動を登録" defaultDate={date} demo={demo} />
+            <ActivityFormButton label="＋ この日に活動を登録" defaultDate={date} demo={demo} staff={staff} />
           )}
         </div>
       )}

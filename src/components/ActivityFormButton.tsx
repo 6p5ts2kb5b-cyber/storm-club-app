@@ -4,6 +4,7 @@
 import { useState } from "react";
 import ActivityForm from "@/components/ActivityForm";
 import { useToast } from "@/components/useToast";
+import type { StaffOption } from "@/lib/data";
 import type { DaySummary } from "@/lib/status";
 
 export default function ActivityFormButton({
@@ -12,12 +13,14 @@ export default function ActivityFormButton({
   day,
   defaultDate,
   demo,
+  staff,
 }: {
   label: string;
   className?: string;
   day?: DaySummary;
   defaultDate: string;
   demo: boolean;
+  staff?: StaffOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [toastEl, showToast] = useToast();
@@ -32,6 +35,7 @@ export default function ActivityFormButton({
           day={day}
           defaultDate={defaultDate}
           demo={demo}
+          staff={staff}
           onClose={() => setOpen(false)}
           onSaved={(m) => showToast("ok", m)}
         />

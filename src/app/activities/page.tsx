@@ -2,7 +2,7 @@ import Link from "next/link";
 import ActivityFormButton from "@/components/ActivityFormButton";
 import Lamp from "@/components/Lamp";
 import SampleBanner from "@/components/SampleBanner";
-import { currentIsAdmin, loadDays } from "@/lib/data";
+import { currentIsAdmin, loadDays, loadStaffOptions } from "@/lib/data";
 import { daysFromToday, DIVISION_LABEL, formatTime, monthDay, todayInTokyo, weekdayLabel } from "@/lib/divisions";
 import { mdw, type ReserveInfo, reserveHeading, reservesByDate } from "@/lib/reserve";
 import { isRest, restWhy, worstLevel } from "@/lib/status";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ActivitiesPage() {
   const today = todayInTokyo();
-  const [result, isAdmin] = await Promise.all([loadDays(), currentIsAdmin()]);
+  const [result, isAdmin, staff] = await Promise.all([loadDays(), currentIsAdmin(), loadStaffOptions()]);
   const demo = !isSupabaseConfigured;
 
   const days = result.ok ? result.data : [];
@@ -231,7 +231,7 @@ export default async function ActivitiesPage() {
             <Link href="/import" className="btn">
               読み取って登録
             </Link>
-            <ActivityFormButton label="＋ 追加" defaultDate={today} demo={demo} />
+            <ActivityFormButton label="＋ 追加" defaultDate={today} demo={demo} staff={staff} />
             </>
           )}
         </div>

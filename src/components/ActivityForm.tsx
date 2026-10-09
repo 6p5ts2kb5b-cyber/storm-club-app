@@ -3,7 +3,8 @@
 // 活動日の登録・編集パネル（下から出てくる入力画面）
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ACTIVITY_TYPES, createDay, deleteDay, type DayInput, updateDay, validateDay } from "@/lib/activity-actions";
+import { ACTIVITY_TYPES, createDay, deleteDay, type DayInput, type UnitInput, updateDay, validateDay } from "@/lib/activity-actions";
+import type { StaffOption } from "@/lib/data";
 import { autoModeForDate, DIVISION_LABEL, divisionsForMode, type DayMode, type Division } from "@/lib/divisions";
 import type { DaySummary } from "@/lib/status";
 
@@ -12,24 +13,41 @@ const MODE_LABEL: Record<DayMode, string> = {
   split: "トップ・アカデミー",
 };
 
+const ALL_DIVISIONS: Division[] = ["storm", "top", "academy"];
+
+const blankUnit = (type = "練習試合"): UnitInput => ({ activityType: type, venue: "", gatherTime: "", umpireNeeded: 0, coachIds: [], note: "" });
+
 function initialInput(day: DaySummary | undefined, defaultDate: string): DayInput {
   if (!day) {
-    return { date: defaultDate, mode: autoModeForDate(defaultDate), activityType: "練習試合", venues: {}, note: "" };
+    const units: Partial<Record<Division, UnitInput>> = {};
+    ALL_DIVISIONS.forEach((d) => (units[d] = blankUnit()));
+    return { date: defaultDate, mode: autoModeForDate(defaultDate), activityType: "練習試合", venues: {}, note: "", units };
   }
-  const venues: Partial<Record<Division, string>> = {};
-  day.units.forEach((u) => (venues[u.division] = u.venue ?? ""));
-  // 区分を切り替えたときのために、STORMの会場をトップ・アカデミーの初期値にも使う
-  if (day.mode === "single" && venues.storm) {
-    venues.top = venues.storm;
-    venues.academy = venues.storm;
-  }
-  return { date: day.date, mode: day.mode, activityType: day.activityType || "練習試合", venues, note: day.note ?? "" };
+  const units: Partial<Record<Division, UnitInput>> = {};
+  day.units.forEach(
+    (u) =>
+      (units[u.division] = {
+        activityType: u.activityType || day.activityType || "練習試合",
+        venue: u.venue ?? "",
+        gatherTime: u.playerGatherTime ?? "",
+        umpireNeeded: u.umpireRequired ? u.umpireNeeded : 0,
+        coachIds: u.coachIds ?? [],
+        note: u.note ?? "",
+      }),
+  );
+  // 区分を切り替えたときのために、ある区分の内容を、ない区分の初期値にも使う（指導者・審判は引き継がない）
+  const base = day.units[0] ? units[day.units[0].division]! : blankUnit(day.activityType || "練習試合");
+  ALL_DIVISIONS.forEach((d) => {
+    if (!units[d]) units[d] = { ...base, coachIds: [], umpireNeeded: 0, note: "" };
+  });
+  return { date: day.date, mode: day.mode, activityType: day.activityType || "練習試合", venues: {}, note: day.note ?? "", units };
 }
 
 export default function ActivityForm({
   day,
   defaultDate,
   demo,
+  staff = [],
   onClose,
   onSaved,
 }: {
@@ -37,6 +55,8 @@ export default function ActivityForm({
   day?: DaySummary;
   defaultDate: string;
   demo: boolean;
+  /** 指導者として選べるスタッフ */
+  staff?: StaffOption[];
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -63,8 +83,13 @@ export default function ActivityForm({
     setInput((i) => ({ ...i, mode }));
   }
 
-  function setVenue(division: Division, value: string) {
-    setInput((i) => ({ ...i, venues: { ...i.venues, [division]: value } }));
+  function setUnit(division: Division, patch: Partial<UnitInput>) {
+    setInput((i) => ({ ...i, units: { ...i.units, [division]: { ...(i.units?.[division] ?? blankUnit()), ...patch } } }));
+  }
+
+  function toggleCoach(division: Division, id: string) {
+    const cur = input.units?.[division]?.coachIds ?? [];
+    setUnit(division, { coachIds: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] });
   }
 
   async function save() {
@@ -166,37 +191,91 @@ export default function ActivityForm({
           </span>
         </div>
 
-        <div className="field">
-          <span className="field__label">活動内容</span>
-          <div className="chip-grid">
-            {ACTIVITY_TYPES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`chip-btn${input.activityType === t ? " is-active" : ""}`}
-                aria-pressed={input.activityType === t}
-                onClick={() => setInput((i) => ({ ...i, activityType: t }))}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
+        {divisions.map((d) => {
+          const u = input.units?.[d] ?? blankUnit();
+          const multi = divisions.length > 1;
+          return (
+            <section key={d} className={`form-unit form-unit--${d}`}>
+              {multi && <h3 className="form-unit__title">{DIVISION_LABEL[d]}</h3>}
 
-        {divisions.map((d) => (
-          <label key={d} className="field">
-            <span className="field__label">{divisions.length > 1 ? `${DIVISION_LABEL[d]}の会場` : "会場"}</span>
-            <input
-              className="input"
-              value={input.venues[d] ?? ""}
-              onChange={(e) => setVenue(d, e.target.value)}
-              placeholder="例：坂戸中学校（未定なら空のまま）"
-            />
-          </label>
-        ))}
+              <div className="field">
+                <span className="field__label">活動内容</span>
+                <div className="chip-grid">
+                  {ACTIVITY_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`chip-btn${u.activityType === t ? " is-active" : ""}`}
+                      aria-pressed={u.activityType === t}
+                      onClick={() => setUnit(d, { activityType: t })}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="field">
+                <span className="field__label">会場</span>
+                <input
+                  className="input"
+                  value={u.venue}
+                  onChange={(e) => setUnit(d, { venue: e.target.value })}
+                  placeholder="例：坂戸中学校（未定なら空のまま）"
+                />
+              </label>
+
+              <label className="field">
+                <span className="field__label">選手集合時間（未定なら空のまま）</span>
+                <input className="input" type="time" value={u.gatherTime} onChange={(e) => setUnit(d, { gatherTime: e.target.value })} />
+              </label>
+
+              <div className="field">
+                <span className="field__label">審判の人数</span>
+                <div className="chip-grid">
+                  {[0, 1, 2, 3, 4, 5, 6].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`chip-btn${u.umpireNeeded === n ? " is-active" : ""}`}
+                      aria-pressed={u.umpireNeeded === n}
+                      onClick={() => setUnit(d, { umpireNeeded: n })}
+                    >
+                      {n === 0 ? "不要" : `${n}名`}
+                    </button>
+                  ))}
+                </div>
+                <span className="field__hint">審判の名前は、保存したあとの画面で入れます。</span>
+              </div>
+
+              {staff.length > 0 && (
+                <div className="field">
+                  <span className="field__label">指導者（出られる人を選ぶ）</span>
+                  <div className="chip-grid">
+                    {staff
+                      .filter((st) => st.is_active && st.can_coach)
+                      .map((st) => {
+                        const on = (u.coachIds ?? []).includes(st.id);
+                        return (
+                          <button key={st.id} type="button" className={`chip-btn${on ? " is-active" : ""}`} aria-pressed={on} onClick={() => toggleCoach(d, st.id)}>
+                            {st.name}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              <label className="field">
+                <span className="field__label">{multi ? `${DIVISION_LABEL[d]}のメモ` : "この活動のメモ"}（任意）</span>
+                <input className="input" value={u.note} onChange={(e) => setUnit(d, { note: e.target.value })} placeholder="持ち物・連絡など" />
+              </label>
+            </section>
+          );
+        })}
 
         <label className="field">
-          <span className="field__label">メモ</span>
+          <span className="field__label">{divisions.length > 1 ? "全体のメモ" : "メモ"}</span>
           <textarea
             className="input input--area"
             rows={2}
