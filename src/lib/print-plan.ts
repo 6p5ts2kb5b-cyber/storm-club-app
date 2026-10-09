@@ -139,7 +139,7 @@ export interface PrintRow {
   sun: boolean;
   /** 祝日の名前（祝日でなければ空） */
   holiday: string;
-  /** 予定がまだ入っていない日（「未定」と載せる） */
+  /** 予定が入っていない土日・祝日（「活動なし」と載せる） */
   blank: boolean;
   groups: PrintGroup[];
   /** 休みだけの日（細い1行にする） */
@@ -253,7 +253,7 @@ export function buildRows(days: DaySummary[], divisions: Division[], dates: stri
       holiday,
     };
     if (units.length === 0 && reserves.length === 0) {
-      // 予定の無い日：土日・祝日は「未定」と載せる（入れ忘れが分かる）。平日は載せない
+      // 予定の無い日：土日・祝日は「活動なし」と載せる。平日は載せない
       if (off) rows.push({ ...base, blank: true, groups: [], quiet: false, reserves: [] });
       continue;
     }
@@ -286,7 +286,7 @@ export function buildPrintText(rows: PrintRow[], title: string, message: string)
   for (const r of rows) {
     const head = `${Number(r.date.slice(5, 7))}/${r.day}（${r.weekday}${r.holiday ? `・${r.holiday}` : ""}）`;
     if (r.blank) {
-      out.push(`${head} 未定`, "");
+      out.push(`${head} 活動なし`, "");
       continue;
     }
     const allRest = r.groups.length > 0 && r.groups.every((g) => g.rest);

@@ -4098,9 +4098,9 @@ select.input {
 .form-unit__title { margin: 0; font-size: 18px; font-weight: 900; }
 
 /* 第2版：A4の1枚に収める・祝日・未定・LINE文章 */
-.pl-fit { zoom: var(--fit, 1); }
+.pl-fitwrap { overflow: hidden; }
 .pl-holiday { display: block; font-size: 8px; font-weight: 800; line-height: 1.1; color: #c42b3b; word-break: break-all; }
-.pl-blank { margin: 0; font-weight: 800; color: #8a5a00; letter-spacing: .1em; }
+.pl-blank { margin: 0; font-weight: 700; color: #777; letter-spacing: .1em; }
 .pr-check { display: flex; align-items: center; gap: 8px; min-height: 36px; font-weight: 700; }
 .pr-check input { width: 20px; height: 20px; }
 .blank-warn { display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: #fff3d6; border: 1px solid #f0c770; }

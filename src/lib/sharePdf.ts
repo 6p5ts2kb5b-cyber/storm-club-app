@@ -232,7 +232,9 @@ export async function elementToPdf(
   // 画面用の縮小（zoom）は使わず、組んだ絵をあとで縮める
   clone.querySelectorAll<HTMLElement>(".pl-fit").forEach((el) => {
     el.style.setProperty("--fit", "1");
+    el.style.transform = "none";
     el.style.removeProperty("width");
+    if (el.parentElement?.classList.contains("pl-fitwrap")) el.parentElement.style.removeProperty("height");
   });
   // PDFは余白なし：画面の見本の外側の余白を詰める
   clone.style.padding = "6px";

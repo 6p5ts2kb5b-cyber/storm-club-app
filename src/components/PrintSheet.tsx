@@ -1,7 +1,6 @@
 "use client";
 
 // スタッフ用の月間予定表：送り先・月・期間を選ぶと、A4の見本がすぐ変わる
-import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DIVISION_LABEL, type Division } from "@/lib/divisions";
 import {
@@ -114,6 +113,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
   const [hidePast, setHidePast] = useState(false);
   const [fitOne, setFitOne] = useState(true);
   const [fit, setFit] = useState(1);
+  const [fitH, setFitH] = useState(0);
   const [copied, setCopied] = useState(false);
   const fitBox = useRef<HTMLDivElement>(null);
 
@@ -123,7 +123,6 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
   }, [today, ym, period, hidePast]);
   const rows = useMemo(() => buildRows(days, divisions, dates), [days, divisions, dates]);
   const title = sheetTitle(name, dates, ym.year, ym.month, period);
-  const blankDays = rows.filter((r) => r.blank && r.date >= today);
   const lineText = useMemo(() => buildPrintText(rows, title, message), [rows, title, message]);
   const weekMode = period !== "month" && period !== "first" && period !== "second";
 
@@ -134,7 +133,6 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
     const host = document.createElement("div");
     host.style.cssText = "position:fixed;left:-30000px;top:0;visibility:hidden;";
     const clone = el.cloneNode(true) as HTMLElement;
-    clone.style.setProperty("--fit", "1");
     clone.className = `${el.className} pr-paper`;
     clone.style.padding = "0";
     clone.style.position = "static";
@@ -142,15 +140,18 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
     host.appendChild(clone);
     document.body.appendChild(host);
     let f = 1;
+    let h = 0;
     for (let i = 0; i < 4; i++) {
       clone.style.width = `${FIT_W / f}px`;
-      const next = Math.min(2.2, Math.max(0.45, (FIT_H / clone.offsetHeight) * 0.98));
+      h = clone.offsetHeight;
+      const next = Math.min(2.2, Math.max(0.45, (FIT_H / h) * 0.98));
       const done = Math.abs(next - f) < 0.005;
       f = next;
       if (done) break;
     }
     host.remove();
     setFit(Math.round(f * 1000) / 1000);
+    setFitH(h);
   }, [rows, message, title]);
 
   async function copyText() {
@@ -315,20 +316,6 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
           </label>
         </section>
 
-        {blankDays.length > 0 && (
-          <div className="blank-warn">
-            <p className="blank-warn__title">⚠ まだ予定が入っていない日が{blankDays.length}日あります</p>
-            <p className="blank-warn__body">紙には「未定」と載ります。押すと、その日の予定を登録できます。</p>
-            <div className="pr-chips">
-              {blankDays.map((r) => (
-                <Link key={r.date} href={`/activities/${r.date}`} className="blank-warn__day">
-                  {Number(r.date.slice(5, 7))}/{r.day}（{r.weekday}）
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         <details className="pr-linetext" open={weekMode && (period === "weekend" || period === "nextWeekend")}>
           <summary>LINEに貼る文章</summary>
           <pre>{lineText}</pre>
@@ -353,10 +340,11 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
 
       <div className="pr-fit" ref={box} style={{ height: height || undefined }}>
         <article className="pr-paper" ref={paper} style={{ width: PAPER_W, transform: `scale(${scale})` }}>
+          <div className="pl-fitwrap" style={fitOne && fit !== 1 ? { height: Math.ceil(fitH * fit) } : undefined}>
           <div
             ref={fitBox}
             className="pl-fit"
-            style={fitOne && fit !== 1 ? ({ "--fit": fit, width: `${Math.floor(FIT_W / fit)}px` } as React.CSSProperties) : undefined}
+            style={fitOne && fit !== 1 ? { transform: `scale(${fit})`, transformOrigin: "top left", width: `${Math.floor(FIT_W / fit)}px` } : undefined}
           >
           <header className="pr-paper__head">
             <h2>{title}</h2>
@@ -380,7 +368,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
                       {r.holiday && <small className="pl-holiday">{r.holiday}</small>}
                     </td>
                     <td className="pl-main">
-                      {r.blank && <p className="pl-blank">未定</p>}
+                      {r.blank && <p className="pl-blank">活動なし</p>}
                       {r.reserves.map((x) => (
                         <div key={x.heading} className="pl-reserve">
                           <p className="pl-reserve__head">☂ {x.heading}</p>
@@ -410,6 +398,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
             </table>
           )}
           {message.trim() && <p className="pr-paper__msg">{message.trim()}</p>}
+          </div>
           </div>
         </article>
       </div>
