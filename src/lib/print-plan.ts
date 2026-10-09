@@ -70,6 +70,8 @@ export interface PrintGroup {
   notes: string[];
   /** 予備日（大会の日にだけ）例：10/17（土）　会場 */
   reserve?: string;
+  /** 予備日の予備日 */
+  reserve2?: string;
   /** 試合のあとに出す項目（指導者・審判・予備日の審判） */
   after: PrintLine[];
 }
@@ -141,6 +143,9 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     if (u.reserveDate) {
       after.push({ k: "予備日審判", v: umpireStatusText(u.reserveUmpires ?? [], u.umpireNeeded) });
     }
+    if (u.reserve2Date) {
+      after.push({ k: "予備日2審判", v: umpireStatusText(u.reserve2Umpires ?? [], u.umpireNeeded) });
+    }
   }
 
   return {
@@ -153,6 +158,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
     games,
     notes,
     after,
+    reserve2: u.reserve2Date ? `${mdw(u.reserve2Date)}${u.reserve2Venue ? `　${u.reserve2Venue}` : ""}` : undefined,
     reserve: u.reserveDate ? `${mdw(u.reserveDate)}${u.reserveVenue ? `　${u.reserveVenue}` : ""}` : undefined,
   };
 }

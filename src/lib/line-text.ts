@@ -100,6 +100,12 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
     lines.push(`　延期の場合は、この日に${unit.reserveName || unit.activityType || "大会"}を行います。`);
     if (unit.reserveUmpires?.length) lines.push(`　審判　${unit.reserveUmpires.join("／")}`);
   }
+  if (unit.reserve2Date) {
+    lines.push("");
+    lines.push(`■予備日の予備日　${mdw(unit.reserve2Date)}${unit.reserve2Venue ? `　${unit.reserve2Venue}` : ""}`);
+    lines.push(`　${unit.reserveDate ? `${mdw(unit.reserveDate)}も延期の場合は、` : ""}この日に${unit.reserveName || unit.activityType || "大会"}を行います。`);
+    if (unit.reserve2Umpires?.length) lines.push(`　審判　${unit.reserve2Umpires.join("／")}`);
+  }
 
   if (unit.coaches.length) {
     lines.push("");

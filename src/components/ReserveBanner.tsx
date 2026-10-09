@@ -1,5 +1,5 @@
 // 予備日にあたる日の案内（青い帯）：延期のとき／実施のとき
-import { type ReserveInfo, reserveHeading, umpireStatusText } from "@/lib/reserve";
+import { md, type ReserveInfo, reserveHeading, umpireStatusText } from "@/lib/reserve";
 
 export default function ReserveBanner({ reserves, heldPlan }: { reserves: ReserveInfo[]; heldPlan: string }) {
   if (reserves.length === 0) return null;
@@ -12,6 +12,7 @@ export default function ReserveBanner({ reserves, heldPlan }: { reserves: Reserv
             <span>延期のとき</span>
             {r.name}
             {r.venue ? `（${r.venue}）` : ""}
+            {r.firstDate ? `　※${md(r.firstDate)}も延期の場合` : ""}
           </p>
           {(r.umpires.length > 0 || r.needed > 0) && (
             <p className="rsv-banner__row">

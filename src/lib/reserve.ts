@@ -19,6 +19,10 @@ export interface ReserveInfo {
   umpires: string[];
   /** 予備日に必要な審判の人数（審判が不要なら0） */
   needed: number;
+  /** 1 = 予備日 / 2 = 予備日の予備日 */
+  level: 1 | 2;
+  /** 予備日の予備日のとき：ひとつ目の予備日 */
+  firstDate?: string;
 }
 
 export function md(date: string): string {
@@ -42,8 +46,19 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
         venue: u.reserveVenue || u.venue || u.groundName || "",
         umpires: u.reserveUmpires ?? [],
         needed: u.umpireRequired ? u.umpireNeeded : 0,
+        level: 1,
       };
       map.set(u.reserveDate, [...(map.get(u.reserveDate) ?? []), info]);
+      if (u.reserve2Date) {
+        const info2: ReserveInfo = {
+          ...info,
+          venue: u.reserve2Venue || info.venue,
+          umpires: u.reserve2Umpires ?? [],
+          level: 2,
+          firstDate: u.reserveDate,
+        };
+        map.set(u.reserve2Date, [...(map.get(u.reserve2Date) ?? []), info2]);
+      }
     }
   }
   return map;
@@ -72,7 +87,7 @@ export function umpireStatusText(names: string[], needed: number): string {
 }
 
 export function reserveHeading(r: ReserveInfo): string {
-  return `${md(r.fromDate)} ${r.name} の予備日`;
+  return `${md(r.fromDate)} ${r.name} の${r.level === 2 ? "予備日の予備日" : "予備日"}`;
 }
 
 /** 予備日にあたる日の「予備日だと分かる」情報を、その日の各区分に入れる（休み・練習の表示用） */

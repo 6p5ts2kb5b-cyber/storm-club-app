@@ -122,19 +122,30 @@ export async function saveReserve(
   name: string | null,
   venue: string | null,
   umpires: string[] = [],
+  level: 1 | 2 = 1,
 ): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase
     .from("activity_units")
-    .update({
-      reserve_umpires: date && umpires.length ? umpires.join("、") : null,
-      reserve_date: date || null,
-      reserve_name: date && name && name.trim() ? name.trim() : null,
-      reserve_venue: date && venue && venue.trim() ? venue.trim() : null,
-    })
+    .update(
+      level === 2
+        ? {
+            reserve2_date: date || null,
+            reserve2_venue: date && venue && venue.trim() ? venue.trim() : null,
+            reserve2_umpires: date && umpires.length ? umpires.join("、") : null,
+          }
+        : {
+            reserve_umpires: date && umpires.length ? umpires.join("、") : null,
+            reserve_date: date || null,
+            reserve_name: date && name && name.trim() ? name.trim() : null,
+            reserve_venue: date && venue && venue.trim() ? venue.trim() : null,
+            // 予備日をなくしたら、予備日の予備日もなくす
+            ...(date ? {} : { reserve2_date: null, reserve2_venue: null, reserve2_umpires: null }),
+          },
+    )
     .eq("id", unitId);
   if (error && /column|schema cache/i.test(error.message ?? "")) {
-    return { ok: false, message: "データベースの更新（0013・0014）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+    return { ok: false, message: "データベースの更新（0013・0014・0017）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
   }
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }

@@ -71,6 +71,12 @@ export default async function ActivitiesPage() {
                 <dd>{mdw(u.reserveDate)}{u.reserveVenue ? `　${u.reserveVenue}` : ""}</dd>
               </>
             )}
+            {u.reserve2Date && (
+              <>
+                <dt>予備日2</dt>
+                <dd>{mdw(u.reserve2Date)}{u.reserve2Venue ? `　${u.reserve2Venue}` : ""}</dd>
+              </>
+            )}
           </dl>
         )}
         <span className="acard__lamps">

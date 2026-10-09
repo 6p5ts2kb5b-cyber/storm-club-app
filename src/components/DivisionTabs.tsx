@@ -145,20 +145,28 @@ export default function DivisionTabs({
     return true;
   }
 
-  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null, rUmpires: string[]): Promise<boolean> {
+  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null, rUmpires: string[], level: 1 | 2 = 1): Promise<boolean> {
     if (!unit) return false;
-    const patch = {
-      reserveDate: rDate ?? undefined,
-      reserveName: rDate && rName ? rName : undefined,
-      reserveVenue: rDate && rVenue ? rVenue : undefined,
-      reserveUmpires: rDate && rUmpires.length ? rUmpires : undefined,
-    };
+    const patch: Partial<UnitSummary> =
+      level === 2
+        ? {
+            reserve2Date: rDate ?? undefined,
+            reserve2Venue: rDate && rVenue ? rVenue : undefined,
+            reserve2Umpires: rDate && rUmpires.length ? rUmpires : undefined,
+          }
+        : {
+            reserveDate: rDate ?? undefined,
+            reserveName: rDate && rName ? rName : undefined,
+            reserveVenue: rDate && rVenue ? rVenue : undefined,
+            reserveUmpires: rDate && rUmpires.length ? rUmpires : undefined,
+            ...(rDate ? {} : { reserve2Date: undefined, reserve2Venue: undefined, reserve2Umpires: undefined }),
+          };
     if (demo || !unit.id) {
       patchActive(patch);
       showToast("ok", "保存しました（お試しモード）");
       return true;
     }
-    const result = await saveReserve(unit.id, rDate, rName, rVenue, rUmpires);
+    const result = await saveReserve(unit.id, rDate, rName, rVenue, rUmpires, level);
     if (!result.ok) {
       showToast("ng", result.message);
       return false;
@@ -265,6 +273,25 @@ export default function DivisionTabs({
             venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
             isAdmin={isAdmin}
             onSave={changeReserve}
+          />
+        </div>
+      )}
+
+      {unit && !rest && unit.reserveDate && (
+        <div className="detail-block" id="sec-reserve2">
+          <ReservePanel
+            key={`reserve2-${unit.division}`}
+            level={2}
+            date={unit.reserve2Date}
+            venue={unit.reserve2Venue}
+            umpires={unit.reserve2Umpires ?? []}
+            umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
+            tournaments={tournaments}
+            demo={demo}
+            defaultName={unit.activityType ?? ""}
+            venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
+            isAdmin={isAdmin}
+            onSave={(a, b, c, e) => changeReserve(a, b, c, e, 2)}
           />
         </div>
       )}

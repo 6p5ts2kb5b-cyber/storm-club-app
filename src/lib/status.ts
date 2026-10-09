@@ -115,6 +115,10 @@ export interface UnitSummary {
   reserveVenue?: string;
   /** 予備日に審判を出す人（名前） */
   reserveUmpires?: string[];
+  /** 予備日の予備日（日付・会場・審判） */
+  reserve2Date?: string;
+  reserve2Venue?: string;
+  reserve2Umpires?: string[];
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
 }
@@ -216,6 +220,19 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
       short === 0
         ? { key: "reserveUmpire", label: "予備日審判", level: "ok", text: `${md} 決定（${have}名）` }
         : { key: "reserveUmpire", label: "予備日審判", level: near ? "ng" : "warn", text: `${md} あと${short}名（${have}/${u.umpireNeeded}名）` },
+    );
+  }
+
+  // 予備日の予備日の審判
+  if (u.umpireRequired && u.reserve2Date) {
+    const have = u.reserve2Umpires?.length ?? 0;
+    const short = Math.max(0, u.umpireNeeded - have);
+    const near = daysFromToday(u.reserve2Date) <= 3;
+    const md = `${Number(u.reserve2Date.slice(5, 7))}/${Number(u.reserve2Date.slice(8, 10))}`;
+    items.push(
+      short === 0
+        ? { key: "reserve2Umpire", label: "予備日2審判", level: "ok", text: `${md} 決定（${have}名）` }
+        : { key: "reserve2Umpire", label: "予備日2審判", level: near ? "ng" : "warn", text: `${md} あと${short}名（${have}/${u.umpireNeeded}名）` },
     );
   }
 

@@ -27,7 +27,7 @@ function Group({ g }: { g: PrintGroup }) {
         <b className={g.rest ? "pl-rest" : undefined}>{g.title}</b>
         {g.rest && g.notes[0] && <span className="pl-why">{g.notes[0]}</span>}
       </p>
-      {(g.lines.length > 0 || g.games.length > 0 || g.after.length > 0 || g.reserve) && (
+      {(g.lines.length > 0 || g.games.length > 0 || g.after.length > 0 || g.reserve || g.reserve2) && (
         <dl className="pl-dl">
           {g.lines.slice(0, 1).map((l) => (
             <Line key={l.k} k={l.k} v={l.v} strong={l.strong} />
@@ -54,6 +54,7 @@ function Group({ g }: { g: PrintGroup }) {
             <Line key={l.k} k={l.k} v={l.v} />
           ))}
           {g.reserve && <Line k="予備日" v={g.reserve} />}
+          {g.reserve2 && <Line k="予備日2" v={g.reserve2} />}
         </dl>
       )}
       {!g.rest && g.notes.map((n, i) => (

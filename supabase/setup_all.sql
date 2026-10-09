@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0016 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0017 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -596,3 +596,9 @@ alter table public.activity_units drop constraint if exists activity_units_tourn
 alter table public.activity_units
   add constraint activity_units_tournament_state_check
   check (tournament_state in ('pending', 'held', 'not_held', 'postponed', 'not_held_rest'));
+
+-- ---- 0017_reserve2.sql ----
+-- 0017: 予備日の予備日（予備日2）：日付・会場・審判
+alter table public.activity_units add column if not exists reserve2_date date;
+alter table public.activity_units add column if not exists reserve2_venue text;
+alter table public.activity_units add column if not exists reserve2_umpires text;
