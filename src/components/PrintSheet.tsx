@@ -51,7 +51,7 @@ function Group({ g }: { g: PrintGroup }) {
             </>
           )}
           {g.after.map((l) => (
-            <Line key={l.k} k={l.k} v={l.v} />
+            <Line key={l.k} k={l.k} v={l.v} bold={l.bold} />
           ))}
           {g.reserve && <Line k="予備日" v={g.reserve} />}
           {g.reserve2 && <Line k="予備日2" v={g.reserve2} />}
@@ -66,11 +66,11 @@ function Group({ g }: { g: PrintGroup }) {
   );
 }
 
-function Line({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
+function Line({ k, v, strong, bold }: { k: string; v: string; strong?: boolean; bold?: boolean }) {
   return (
     <>
       <dt>{k}</dt>
-      <dd className={strong ? "pl-strong" : undefined}>{v}</dd>
+      <dd className={strong ? "pl-strong" : bold ? "pl-bold" : undefined}>{v}</dd>
     </>
   );
 }

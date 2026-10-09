@@ -35,6 +35,22 @@ export default async function ActivitiesPage() {
     return n === 0 ? "今日" : n === 1 ? "明日" : n > 1 ? `${n}日後` : "";
   };
 
+  // 審判の名前（太字）と、足りない人数（赤い太字）
+  const umpireView = (names: string[], needed: number) => {
+    const short = Math.max(0, needed - names.length);
+    return (
+      <span className="acard__people">
+        {names.length > 0 && <b>{names.join("・")}</b>}
+        {needed > 0 && (
+          <b className={short ? "acard__short" : "acard__full"}>
+            {short ? (names.length ? `あと${short}名` : `${needed}名必要（あと${short}名）`) : `${needed}名そろい`}
+          </b>
+        )}
+        {needed === 0 && names.length === 0 && <b className="acard__short">未定</b>}
+      </span>
+    );
+  };
+
   const unitLines = (u: (typeof days)[number]["units"][number]) => {
     const place = u.venue || (u.groundState === "decided" ? u.groundName : undefined);
     const games = [...u.games].sort((a, b) => a.no - b.no);
@@ -65,16 +81,45 @@ export default async function ActivitiesPage() {
                 </dd>
               </>
             )}
+            <dt>指導者</dt>
+            <dd>{u.coaches.length ? <b className="acard__people">{u.coaches.join("・")}</b> : <b className="acard__short">未定</b>}</dd>
+            {u.umpireRequired && (
+              <>
+                <dt>審判</dt>
+                <dd>
+                  {umpireView(
+                    [...new Set((u.umpireSlots ?? []).filter((s) => s.staffId && s.staffName).map((s) => s.staffName as string))],
+                    u.umpireNeeded,
+                  )}
+                </dd>
+              </>
+            )}
             {u.reserveDate && (
               <>
                 <dt>予備日</dt>
-                <dd>{mdw(u.reserveDate)}{u.reserveVenue ? `　${u.reserveVenue}` : ""}</dd>
+                <dd>
+                  {mdw(u.reserveDate)}{u.reserveVenue ? `　${u.reserveVenue}` : ""}
+                  {u.umpireRequired && (
+                    <span className="acard__sub">
+                      <small>審判</small>
+                      {umpireView(u.reserveUmpires ?? [], u.umpireNeeded)}
+                    </span>
+                  )}
+                </dd>
               </>
             )}
             {u.reserve2Date && (
               <>
                 <dt>予備日2</dt>
-                <dd>{mdw(u.reserve2Date)}{u.reserve2Venue ? `　${u.reserve2Venue}` : ""}</dd>
+                <dd>
+                  {mdw(u.reserve2Date)}{u.reserve2Venue ? `　${u.reserve2Venue}` : ""}
+                  {u.umpireRequired && (
+                    <span className="acard__sub">
+                      <small>審判</small>
+                      {umpireView(u.reserve2Umpires ?? [], u.umpireNeeded)}
+                    </span>
+                  )}
+                </dd>
               </>
             )}
           </dl>

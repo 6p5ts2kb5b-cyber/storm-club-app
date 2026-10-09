@@ -48,6 +48,8 @@ export interface PrintLine {
   k: string;
   v: string;
   strong?: boolean;
+  /** 太字（指導者・審判など） */
+  bold?: boolean;
 }
 
 export interface PrintGame {
@@ -136,15 +138,15 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
 
   // 指導者・審判（決まっている名前と、足りない人数）
   const after: PrintLine[] = [];
-  if (u.coaches.length) after.push({ k: "指導者", v: u.coaches.join("・") });
+  if (u.coaches.length) after.push({ k: "指導者", v: u.coaches.join("・"), bold: true });
   if (u.umpireRequired) {
     const names = [...new Set((u.umpireSlots ?? []).filter((s) => s.staffId && s.staffName).map((s) => s.staffName as string))];
-    after.push({ k: "審判", v: umpireStatusText(names, u.umpireNeeded) });
+    after.push({ k: "審判", v: umpireStatusText(names, u.umpireNeeded), bold: true });
     if (u.reserveDate) {
-      after.push({ k: "予備日審判", v: umpireStatusText(u.reserveUmpires ?? [], u.umpireNeeded) });
+      after.push({ k: "予備日審判", v: umpireStatusText(u.reserveUmpires ?? [], u.umpireNeeded), bold: true });
     }
     if (u.reserve2Date) {
-      after.push({ k: "予備日2審判", v: umpireStatusText(u.reserve2Umpires ?? [], u.umpireNeeded) });
+      after.push({ k: "予備日2審判", v: umpireStatusText(u.reserve2Umpires ?? [], u.umpireNeeded), bold: true });
     }
   }
 

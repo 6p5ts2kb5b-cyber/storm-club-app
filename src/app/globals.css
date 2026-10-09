@@ -4075,3 +4075,12 @@ select.input {
 .acard__rest { margin: 0; font-size: 20px; font-weight: 900; }
 .acard__rest small { margin-left: 8px; color: #666; font-size: 12px; font-weight: 600; }
 .acard__lamps { position: absolute; right: 0; bottom: 0; }
+
+/* 指導者・審判の名前（太字）と不足人数（赤い太字） */
+.acard__people { display: inline-flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; font-weight: 900; }
+.acard__people b, b.acard__people { font-weight: 900; font-size: 16px; }
+.acard__short { color: #c0392b; font-size: 16px; font-weight: 900; }
+.acard__full { color: #2e7d32; font-size: 14px; font-weight: 800; }
+.acard__sub { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; margin-top: 2px; }
+.acard__sub small { color: #666; font-size: 12px; font-weight: 600; }
+.pl-bold { font-weight: 900; font-size: 15px; }
