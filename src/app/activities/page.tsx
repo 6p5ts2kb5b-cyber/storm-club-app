@@ -43,7 +43,7 @@ export default async function ActivitiesPage() {
         {names.length > 0 && <b>{names.join("・")}</b>}
         {needed > 0 && (
           <b className={short ? "acard__short" : "acard__full"}>
-            {short ? (names.length ? `あと${short}名` : `${needed}名必要（あと${short}名）`) : `${needed}名そろい`}
+            {short ? (names.length ? `あと${short}名` : `${needed}名必要（あと${short}名）`) : `${needed}人揃いました。`}
           </b>
         )}
         {needed === 0 && names.length === 0 && <b className="acard__short">未定</b>}
