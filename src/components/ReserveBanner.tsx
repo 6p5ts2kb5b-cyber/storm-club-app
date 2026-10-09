@@ -17,6 +17,7 @@ export default function ReserveBanner({ reserves, heldPlan }: { reserves: Reserv
           {(r.umpires.length > 0 || r.needed > 0) && (
             <p className="rsv-banner__row">
               <span>延期の審判</span>
+              {r.umpireGather ? `審判集合 ${r.umpireGather}　` : ""}
               {umpireStatusText(r.umpires, r.needed)}
             </p>
           )}

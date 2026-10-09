@@ -4084,3 +4084,9 @@ select.input {
 .acard__sub { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; margin-top: 2px; }
 .acard__sub small { color: #666; font-size: 12px; font-weight: 600; }
 .pl-bold { font-weight: 900; font-size: 15px; }
+.acard__gt { display: inline-flex; align-items: baseline; gap: 4px; margin-right: 10px; font-size: 12px; color: #444; font-weight: 700; }
+.acard__gt b { font-family: var(--font-num), sans-serif; font-size: 20px; color: #111; }
+.acard__reservebox { display: grid; gap: 3px; padding: 6px 10px; border: 1.5px solid #8fb4e8; background: #eaf2fd; border-radius: 10px; }
+.acard__reservebox .acard__reserve { padding: 0; background: none; }
+.acard__rline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; font-weight: 700; }
+.acard__rline small { min-width: 5.5em; color: #444; font-size: 12px; font-weight: 600; }

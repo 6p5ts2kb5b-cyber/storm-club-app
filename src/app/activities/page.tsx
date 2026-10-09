@@ -63,7 +63,7 @@ export default async function ActivitiesPage() {
             {place && (<><dt>会場</dt><dd>{place}</dd></>)}
             {u.playerGatherTime && (
               <>
-                <dt>集合</dt>
+                <dt>選手集合</dt>
                 <dd className="acard__gather">{formatTime(u.playerGatherTime)}{u.gatherPlace ? `　${u.gatherPlace}` : ""}</dd>
               </>
             )}
@@ -87,6 +87,11 @@ export default async function ActivitiesPage() {
               <>
                 <dt>審判</dt>
                 <dd>
+                  {u.umpireGatherTime && (
+                    <span className="acard__gt">
+                      審判集合<b>{formatTime(u.umpireGatherTime)}</b>
+                    </span>
+                  )}
                   {umpireView(
                     [...new Set((u.umpireSlots ?? []).filter((s) => s.staffId && s.staffName).map((s) => s.staffName as string))],
                     u.umpireNeeded,
@@ -102,6 +107,11 @@ export default async function ActivitiesPage() {
                   {u.umpireRequired && (
                     <span className="acard__sub">
                       <small>審判</small>
+                      {u.umpireGatherTime && (
+                        <span className="acard__gt">
+                          審判集合<b>{formatTime(u.umpireGatherTime)}</b>
+                        </span>
+                      )}
                       {umpireView(u.reserveUmpires ?? [], u.umpireNeeded)}
                     </span>
                   )}
@@ -116,6 +126,11 @@ export default async function ActivitiesPage() {
                   {u.umpireRequired && (
                     <span className="acard__sub">
                       <small>審判</small>
+                      {u.umpireGatherTime && (
+                        <span className="acard__gt">
+                          審判集合<b>{formatTime(u.umpireGatherTime)}</b>
+                        </span>
+                      )}
                       {umpireView(u.reserve2Umpires ?? [], u.umpireNeeded)}
                     </span>
                   )}
@@ -146,7 +161,25 @@ export default async function ActivitiesPage() {
           <span className="acard__body">
             {when && <span className={`acard__badge${when === "今日" || when === "明日" ? " is-near" : ""}`}>{when}</span>}
             {it.reserves.map((r) => (
-              <span key={`${r.fromDate}-${r.division}`} className="acard__reserve">☂ {reserveHeading(r)}</span>
+              <span key={`${r.fromDate}-${r.division}`} className="acard__reservebox">
+                <span className="acard__reserve">☂ {reserveHeading(r)}</span>
+                <span className="acard__rline">
+                  <small>延期のとき</small>
+                  {r.name}
+                  {r.venue ? `（${r.venue}）` : ""}
+                </span>
+                {(r.needed > 0 || r.umpires.length > 0) && (
+                  <span className="acard__rline">
+                    <small>延期の審判</small>
+                    {r.umpireGather && (
+                      <span className="acard__gt">
+                        審判集合<b>{r.umpireGather}</b>
+                      </span>
+                    )}
+                    {umpireView(r.umpires, r.needed)}
+                  </span>
+                )}
+              </span>
             ))}
             {d ? (
               <>

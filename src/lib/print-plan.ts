@@ -109,7 +109,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
 
   const lines: PrintLine[] = [];
   const gather = [u.playerGatherTime ? formatTime(u.playerGatherTime) : "", u.gatherPlace ?? ""].filter(Boolean).join("　");
-  if (gather) lines.push({ k: "集合", v: gather, strong: true });
+  if (gather) lines.push({ k: "選手集合", v: gather, strong: true });
   const place = u.venue || (u.groundState === "decided" ? u.groundName : undefined);
   if (place) lines.push({ k: "会場", v: place });
 
@@ -141,6 +141,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
   if (u.coaches.length) after.push({ k: "指導者", v: u.coaches.join("・"), bold: true });
   if (u.umpireRequired) {
     const names = [...new Set((u.umpireSlots ?? []).filter((s) => s.staffId && s.staffName).map((s) => s.staffName as string))];
+    if (u.umpireGatherTime) after.push({ k: "審判集合", v: formatTime(u.umpireGatherTime), strong: true });
     after.push({ k: "審判", v: umpireStatusText(names, u.umpireNeeded), bold: true });
     if (u.reserveDate) {
       after.push({ k: "予備日審判", v: umpireStatusText(u.reserveUmpires ?? [], u.umpireNeeded), bold: true });
@@ -203,7 +204,8 @@ export function buildRows(days: DaySummary[], divisions: Division[], year: numbe
         heading: reserveHeading(r),
         postponed: `${r.name}${r.venue ? `（${r.venue}）` : ""}`,
         held,
-        umpires: r.needed > 0 || r.umpires.length ? umpireStatusText(r.umpires, r.needed) : "",
+        umpires:
+          r.needed > 0 || r.umpires.length ? `${r.umpireGather ? `審判集合 ${r.umpireGather}　` : ""}${umpireStatusText(r.umpires, r.needed)}` : "",
       })),
     });
   }

@@ -21,6 +21,8 @@ export interface ReserveInfo {
   needed: number;
   /** 1 = 予備日 / 2 = 予備日の予備日 */
   level: 1 | 2;
+  /** 審判の集合時間（例：7:45。なければ空） */
+  umpireGather: string;
   /** 予備日の予備日のとき：ひとつ目の予備日 */
   firstDate?: string;
 }
@@ -47,6 +49,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
         umpires: u.reserveUmpires ?? [],
         needed: u.umpireRequired ? u.umpireNeeded : 0,
         level: 1,
+        umpireGather: u.umpireRequired && u.umpireGatherTime ? formatTime(u.umpireGatherTime) : "",
       };
       map.set(u.reserveDate, [...(map.get(u.reserveDate) ?? []), info]);
       if (u.reserve2Date) {
