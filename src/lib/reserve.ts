@@ -4,7 +4,7 @@
 // ============================================================
 
 import { formatTime, weekdayLabel } from "./divisions";
-import type { DaySummary, UnitSummary } from "./status";
+import { type DaySummary, isRest, type UnitSummary } from "./status";
 import type { Division } from "./divisions";
 
 export interface ReserveInfo {
@@ -51,7 +51,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
 
 /** 「大会が実施されたとき」のその日の予定（なければ休養日） */
 export function heldPlanText(units: UnitSummary[]): string {
-  const active = units.filter((u) => !(u.tournamentName && u.tournamentState === "held") && (u.activityType || u.venue || u.playerGatherTime));
+  const active = units.filter((u) => !isRest(u) && (u.activityType || u.venue || u.playerGatherTime));
   if (!active.length) return "休養日";
   return active
     .map((u) =>

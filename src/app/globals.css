@@ -3930,6 +3930,7 @@ select.input {
   background: var(--hold-tint);
 }
 
+.tour-choice--not_held_rest.is-active,
 .tour-choice--held.is-active {
   border-color: var(--ink-2);
   background: #e9eee9;

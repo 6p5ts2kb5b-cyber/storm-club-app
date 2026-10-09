@@ -4,7 +4,7 @@
 
 import { DIVISION_LABEL, formatDateLong, formatTime } from "./divisions";
 import { mdw } from "./reserve";
-import { isRest, reserveText, type UnitSummary } from "./status";
+import { isRest, reserveText, restWhy, type UnitSummary } from "./status";
 import {
   isFilled,
   matchupText,
@@ -24,7 +24,7 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
 
   if (isRest(unit)) {
     lines.push(`■休み`);
-    lines.push(`${reserveText(unit) ? `${reserveText(unit)}です。` : ""}${unit.tournamentName}が実施されたため、この日は休養日（練習はありません）です。`);
+    lines.push(`${reserveText(unit) ? `${reserveText(unit)}です。` : ""}${reserveText(unit) ? `${unit.tournamentName}が実施されたため` : restWhy(unit)}、この日は休養日（練習はありません）です。`);
     if (unit.note) {
       lines.push("");
       lines.push("■連絡");

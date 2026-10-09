@@ -27,13 +27,14 @@ export interface Game {
   note?: string;
 }
 
-export type TournamentState = "pending" | "held" | "not_held" | "postponed";
+export type TournamentState = "pending" | "held" | "not_held" | "postponed" | "not_held_rest";
 
 export const TOURNAMENT_STATE_LABEL: Record<TournamentState, string> = {
   pending: "確認中",
   held: "実施される → 休み",
   not_held: "実施されない → 練習",
   postponed: "延期 → この日に大会",
+  not_held_rest: "実施されない → 休養日",
 };
 
 /** 大会が実施されるため、この日が「休み」になっているか */
@@ -44,7 +45,12 @@ export function reserveText(u: { tournamentName?: string; tournamentDate?: strin
 }
 
 export function isRest(u: Pick<UnitSummary, "tournamentName" | "tournamentState">): boolean {
-  return Boolean(u.tournamentName) && u.tournamentState === "held";
+  return Boolean(u.tournamentName) && (u.tournamentState === "held" || u.tournamentState === "not_held_rest");
+}
+
+/** 休みの理由（「○○が実施されるため」／「○○が実施されないため」） */
+export function restWhy(u: Pick<UnitSummary, "tournamentName" | "tournamentState">): string {
+  return `${u.tournamentName}が実施${u.tournamentState === "not_held_rest" ? "されない" : "される"}ため`;
 }
 
 /** ok = 🟢 完了・確定 / warn = 🟡 確認中 / ng = 🔴 未確定・不足 / none = 対象外 */
@@ -134,7 +140,7 @@ export interface CheckItem {
 export function checkUnit(u: UnitSummary): CheckItem[] {
   // 大会が実施される日は「休み」。準備する項目はありません
   if (isRest(u)) {
-    return [{ key: "tournament", label: "大会", level: "none", text: `${u.tournamentName}が実施 → 休み` }];
+    return [{ key: "tournament", label: "大会", level: "none", text: `${u.tournamentName}が実施${u.tournamentState === "not_held_rest" ? "されない" : ""} → 休み` }];
   }
   const items: CheckItem[] = [];
 

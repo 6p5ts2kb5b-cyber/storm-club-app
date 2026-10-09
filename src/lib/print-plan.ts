@@ -5,7 +5,7 @@
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
 import { heldPlanText, mdw, reserveHeading, reservesByDate, umpireStatusText } from "./reserve";
-import { type DaySummary, isRest, reserveText, type UnitSummary } from "./status";
+import { type DaySummary, isRest, reserveText, restWhy, type UnitSummary } from "./status";
 
 /** 送り先のよく使う組み合わせ */
 export const AUDIENCES: { key: string; label: string; divisions: Division[] }[] = [
@@ -99,7 +99,7 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
       lines: [],
       games: [],
       after: [],
-      notes: [reserveText(u) ? `${reserveText(u)}（大会が実施されたため）` : `${u.tournamentName}が実施されるため`],
+      notes: [reserveText(u) ? `${reserveText(u)}（大会が実施されたため）` : restWhy(u)],
     };
   }
 

@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0015 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0016 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -589,3 +589,10 @@ revoke all on public.tournaments from anon;
 insert into public.tournaments (name) values ('JJBF大会') on conflict (name) do nothing;
 
 delete from public.tournaments where name = 'STORM杯・JJBF大会';
+
+-- ---- 0016_tournament_not_held_rest.sql ----
+-- 0016: 大会が実施されない場合に「休養日」にする選択肢を追加
+alter table public.activity_units drop constraint if exists activity_units_tournament_state_check;
+alter table public.activity_units
+  add constraint activity_units_tournament_state_check
+  check (tournament_state in ('pending', 'held', 'not_held', 'postponed', 'not_held_rest'));

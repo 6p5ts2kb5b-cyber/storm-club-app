@@ -143,7 +143,7 @@ export async function saveReserve(
 export async function saveTournament(
   unitId: string,
   name: string | null,
-  state: "pending" | "held" | "not_held" | "postponed",
+  state: "pending" | "held" | "not_held" | "postponed" | "not_held_rest",
 ): Promise<ActionResult> {
   const supabase = createClient();
   const { error } = await supabase
@@ -151,7 +151,7 @@ export async function saveTournament(
     .update({ tournament_name: name && name.trim() ? name.trim() : null, tournament_state: state })
     .eq("id", unitId);
   if (error && /column|schema cache/i.test(error.message ?? "")) {
-    return { ok: false, message: "データベースの更新（0010〜0012）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
+    return { ok: false, message: "データベースの更新（0010〜0016）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。" };
   }
   return error ? { ok: false, message: explain(error) } : { ok: true };
 }
