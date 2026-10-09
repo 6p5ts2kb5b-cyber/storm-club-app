@@ -16,7 +16,7 @@ import {
   type PrintGroup,
   sheetTitle,
 } from "@/lib/print-plan";
-import { elementToPdf, hasPdfSupport, shareOrDownload } from "@/lib/sharePdf";
+import { elementToPdf, shareOrDownload } from "@/lib/sharePdf";
 import type { DaySummary } from "@/lib/status";
 
 const PAPER_W = 794; // A4の幅（画面のピクセル）
@@ -104,15 +104,11 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
   const [scale, setScale] = useState(0.5);
   const [height, setHeight] = useState(0);
 
-  const [pdfReady, setPdfReady] = useState(false);
+  const pdfReady = true; // PDFは自前の描画で作るので、いつでも使える
   const [pdf, setPdf] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [needRetry, setNeedRetry] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
-
-  useEffect(() => {
-    hasPdfSupport().then(setPdfReady);
-  }, []);
 
   const name = audienceName(divisions);
   const [hidePast, setHidePast] = useState(false);
@@ -131,7 +127,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
   const lineText = useMemo(() => buildPrintText(rows, title, message), [rows, title, message]);
   const weekMode = period !== "month" && period !== "first" && period !== "second";
 
-  // A4の1枚にちょうど収まる倍率を測る（少ないと大きく最大1.8倍・多いと小さく最小0.45倍）
+  // A4の1枚にちょうど収まる倍率を測る（少ないと大きく最大2.2倍・多いと小さく最小0.45倍）
   useLayoutEffect(() => {
     const el = fitBox.current;
     if (!el) return;
@@ -148,7 +144,7 @@ export default function PrintSheet({ days, today }: { days: DaySummary[]; today:
     let f = 1;
     for (let i = 0; i < 4; i++) {
       clone.style.width = `${FIT_W / f}px`;
-      const next = Math.min(1.8, Math.max(0.45, (FIT_H / clone.offsetHeight) * 0.98));
+      const next = Math.min(2.2, Math.max(0.45, (FIT_H / clone.offsetHeight) * 0.98));
       const done = Math.abs(next - f) < 0.005;
       f = next;
       if (done) break;
