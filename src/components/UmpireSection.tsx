@@ -28,7 +28,7 @@ import {
   umpireTeamLabel,
   type UmpireSystem,
 } from "@/lib/umpire";
-import { savePerson, saveUnitGather, setGameSystem, setSlot } from "@/lib/umpire-actions";
+import { savePerson, saveUnitGather, setGameCondition, setGameOutcome, setGameSystem, setSlot } from "@/lib/umpire-actions";
 
 type Notify = (kind: "ok" | "ng", text: string) => void;
 
@@ -131,6 +131,70 @@ export default function UmpireSection({
     router.refresh();
   }
 
+  // 「STORMが n 名、残りは相手」に分ける。名前が入っている枠はそのまま、空いている枠のうしろから相手にする
+  async function changeSplit(game: Game, stormCount: number) {
+    if (!game.id) return;
+    const positions = SYSTEM_POSITIONS[systemOf(game)];
+    const free = positions.filter((p) => !slots.find((s) => s.gameId === game.id && s.position === p && s.staffId));
+    const wantOpp = Math.max(0, positions.length - stormCount);
+    const before = slots;
+    const changes: { position: Position; opp: boolean }[] = free.map((position, i) => ({ position, opp: i >= free.length - wantOpp }));
+    const kept = slots.filter((s) => s.gameId !== game.id || !free.includes(s.position));
+    const next = [...kept, ...changes.filter((c) => c.opp).map((c): Slot => ({ gameId: game.id as string, position: c.position, opponent: true }))];
+    onPatch({ umpireSlots: next });
+    const text = `第${game.no}試合：STORM ${stormCount}名＋${umpireTeamLabel(game)} ${positions.length - stormCount}名`;
+    if (!live) return done(text);
+    setBusyKey(`${game.id}-split`);
+    for (const c of changes) {
+      const r = await setSlot(game.id, c.position, c.opp ? { opponent: true } : null);
+      if (!r.ok) {
+        setBusyKey(null);
+        onPatch({ umpireSlots: before });
+        return notify("ng", r.message);
+      }
+    }
+    setBusyKey(null);
+    done(text);
+    router.refresh();
+  }
+
+  // 結果しだいの条件（例：第1試合に負けたら）
+  async function changeCondition(game: Game, cond: { game: number; result: "lose" | "win" } | null) {
+    if (!game.id) return;
+    const before = unit.games;
+    onPatch({
+      games: unit.games.map((g) =>
+        g.id === game.id ? { ...g, umpireCondGame: cond?.game, umpireCondResult: cond?.result, umpireCondOutcome: undefined } : g,
+      ),
+    });
+    if (!live) return done("条件を保存しました");
+    setBusyKey(`cond-${game.id}`);
+    const r = await setGameCondition(game.id, cond);
+    setBusyKey(null);
+    if (!r.ok) {
+      onPatch({ games: before });
+      return notify("ng", r.message);
+    }
+    done("条件を保存しました");
+    router.refresh();
+  }
+
+  async function changeOutcome(game: Game, outcome: "lose" | "win" | null) {
+    if (!game.id) return;
+    const before = unit.games;
+    onPatch({ games: unit.games.map((g) => (g.id === game.id ? { ...g, umpireCondOutcome: outcome ?? undefined } : g)) });
+    if (!live) return done("結果を保存しました");
+    setBusyKey(`cond-${game.id}`);
+    const r = await setGameOutcome(game.id, outcome);
+    setBusyKey(null);
+    if (!r.ok) {
+      onPatch({ games: before });
+      return notify("ng", r.message);
+    }
+    done("結果を保存しました");
+    router.refresh();
+  }
+
   async function changeSystem(game: Game, system: UmpireSystem) {
     if (!game.id) return;
     const keep = SYSTEM_POSITIONS[system];
@@ -218,6 +282,9 @@ export default function UmpireSection({
                   {unit.openPositions.length ? `空き ${unit.openPositions.length}枠` : "全枠決定"}
                 </span>
               </div>
+              {(unit.umpireConditional ?? []).length > 0 && (
+                <p className="field__hint">結果しだい：{(unit.umpireConditional ?? []).join("・")}（結果が決まるまで「空き」には数えません）</p>
+              )}
               <UmpireSlots
                 games={unit.games}
                 slots={slots}
@@ -228,6 +295,9 @@ export default function UmpireSection({
                 onSetSlot={changeSlot}
                 onSetAllOpponent={changeAllOpponent}
                 onSetSystem={changeSystem}
+                onSetSplit={changeSplit}
+                onSetCondition={changeCondition}
+                onSetOutcome={changeOutcome}
               />
             </section>
           </div>

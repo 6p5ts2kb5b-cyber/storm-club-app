@@ -72,11 +72,26 @@ export function systemOf(g: Game): UmpireSystem {
   return (g.system ?? DEFAULT_SYSTEM) as UmpireSystem;
 }
 
+/** 結果しだいの条件：none=条件なし / pending=結果待ち / yes=審判が必要になった / no=不要になった */
+export type CondState = "none" | "pending" | "yes" | "no";
+
+export function condState(g: Game): CondState {
+  if (!g.umpireCondGame || !g.umpireCondResult) return "none";
+  if (!g.umpireCondOutcome) return "pending";
+  return g.umpireCondOutcome === g.umpireCondResult ? "yes" : "no";
+}
+
+/** 「第1試合に負けたら」 */
+export function condText(g: Game): string {
+  if (!g.umpireCondGame || !g.umpireCondResult) return "";
+  return `第${g.umpireCondGame}試合に${g.umpireCondResult === "lose" ? "負けたら" : "勝ったら"}`;
+}
+
 /** その試合で、いま有効な枠だけを返す（人数制から外れたポジションは数えない） */
 export function activeSlots(games: Game[], slots: Slot[]): Slot[] {
   return slots.filter((s) => {
     const g = games.find((x) => x.id === s.gameId);
-    return g ? SYSTEM_POSITIONS[systemOf(g)].includes(s.position) : false;
+    return g ? condState(g) !== "no" && SYSTEM_POSITIONS[systemOf(g)].includes(s.position) : false;
   });
 }
 
@@ -89,10 +104,23 @@ export function isFilled(s: Slot | undefined): boolean {
 export function openPositionList(games: Game[], slots: Slot[]): string[] {
   const list: string[] = [];
   for (const g of [...games].sort((a, b) => a.no - b.no)) {
+    // 結果待ち・不要になった試合は、「空き」には数えない
+    if (condState(g) === "pending" || condState(g) === "no") continue;
     for (const pos of SYSTEM_POSITIONS[systemOf(g)]) {
       const s = slots.find((x) => x.gameId === g.id && x.position === pos);
       if (!isFilled(s)) list.push(`第${g.no}試合 ${POSITION_LABEL[pos]}`);
     }
+  }
+  return list;
+}
+
+/** 結果待ちの試合で、必要になったらまだ空いている枠（例：「第3試合（第1試合に負けたら）あと2枠」） */
+export function conditionalList(games: Game[], slots: Slot[]): string[] {
+  const list: string[] = [];
+  for (const g of [...games].sort((a, b) => a.no - b.no)) {
+    if (condState(g) !== "pending") continue;
+    const open = SYSTEM_POSITIONS[systemOf(g)].filter((pos) => !isFilled(slots.find((x) => x.gameId === g.id && x.position === pos))).length;
+    if (open > 0) list.push(`第${g.no}試合（${condText(g)}）あと${open}枠`);
   }
   return list;
 }
@@ -197,15 +225,16 @@ export function deriveUmpire(u: {
   umpireSlots?: Slot[];
   umpireOffset?: number;
   umpireGatherManual?: string;
-}): { umpireAssigned: number; openPositions: string[]; umpireGatherTime?: string; umpireGatherAuto?: string } {
+}): { umpireAssigned: number; openPositions: string[]; umpireConditional: string[]; umpireGatherTime?: string; umpireGatherAuto?: string } {
   const slots = u.umpireSlots ?? [];
   const auto = autoUnitGather(u.games, u.umpireOffset ?? DEFAULT_OFFSET);
   if (!u.umpireRequired) {
-    return { umpireAssigned: 0, openPositions: [], umpireGatherTime: undefined, umpireGatherAuto: auto };
+    return { umpireAssigned: 0, openPositions: [], umpireConditional: [], umpireGatherTime: undefined, umpireGatherAuto: auto };
   }
   return {
     umpireAssigned: assignedStaffIds(u.games, slots).length,
     openPositions: openPositionList(u.games, slots),
+    umpireConditional: conditionalList(u.games, slots),
     umpireGatherTime: u.umpireGatherManual ?? auto,
     umpireGatherAuto: auto,
   };

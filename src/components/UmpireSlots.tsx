@@ -8,6 +8,8 @@ import type { StaffOption } from "@/lib/data";
 import { formatTime } from "@/lib/divisions";
 import type { Game } from "@/lib/status";
 import {
+  condState,
+  condText,
   isFilled,
   matchupText,
   POSITION_LABEL,
@@ -32,6 +34,9 @@ export default function UmpireSlots({
   onSetSlot,
   onSetSystem,
   onSetAllOpponent,
+  onSetSplit,
+  onSetCondition,
+  onSetOutcome,
 }: {
   games: Game[];
   slots: Slot[];
@@ -45,6 +50,12 @@ export default function UmpireSlots({
   onSetSystem: (game: Game, system: UmpireSystem) => void;
   /** その試合の枠を、すべて「他チームが担当」にする */
   onSetAllOpponent: (game: Game) => void;
+  /** STORMが n 名、残りは相手に分ける */
+  onSetSplit: (game: Game, stormCount: number) => void;
+  /** 結果しだいで審判が必要になる条件（null で条件なし） */
+  onSetCondition: (game: Game, cond: { game: number; result: "lose" | "win" } | null) => void;
+  /** 条件の元になる試合の結果 */
+  onSetOutcome: (game: Game, outcome: "lose" | "win" | null) => void;
 }) {
   const [picking, setPicking] = useState<{ game: Game; position: Position } | null>(null);
   const sorted = [...games].sort((a, b) => a.no - b.no);
@@ -72,14 +83,19 @@ export default function UmpireSlots({
         const system = systemOf(g);
         const positions = SYSTEM_POSITIONS[system];
         const open = positions.filter((p) => !isFilled(slots.find((s) => s.gameId === g.id && s.position === p))).length;
+        const cs = condState(g);
+        const oppCount = positions.filter((p) => slots.find((s) => s.gameId === g.id && s.position === p)?.opponent).length;
+        const editable = canEdit && Boolean(g.id);
         return (
           <div key={g.id ?? g.no} className={`slot-game${open ? " has-open" : ""}`}>
             <div className="slot-game__head">
               <span className="game__no">第{g.no}試合</span>
               <span className="slot-game__time">{g.start ? formatTime(g.start) : "時間未定"}</span>
               <span className="slot-game__match">{matchupText(g)}</span>
-              <span className={`slot-game__state${open ? " is-ng" : " is-ok"}`}><Lamp level={open ? "ng" : "ok"} />
-                {open ? `空き ${open}` : "全員決定"}</span>
+              <span className={`slot-game__state${cs === "pending" ? " is-warn" : open && cs !== "no" ? " is-ng" : " is-ok"}`}>
+                <Lamp level={cs === "pending" ? "warn" : cs === "no" ? "none" : open ? "ng" : "ok"} />
+                {cs === "no" ? "審判は不要" : cs === "pending" ? `結果待ち（空き ${open}）` : open ? `空き ${open}` : "全員決定"}
+              </span>
             </div>
 
             <div className="system-row" role="radiogroup" aria-label={`第${g.no}試合の人数制`}>
@@ -100,6 +116,78 @@ export default function UmpireSlots({
                 </button>
               ))}
             </div>
+
+            <div className="split-row" role="group" aria-label={`第${g.no}試合の分け方`}>
+              <span className="split-row__label">STORMが出す人数</span>
+              {Array.from({ length: positions.length + 1 }, (_, i) => positions.length - i).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`chip-btn${oppCount === positions.length - n ? " is-active" : ""}`}
+                  disabled={!editable || busyKey === `${g.id}-split`}
+                  onClick={() => onSetSplit(g, n)}
+                >
+                  {n === positions.length ? "全員" : n === 0 ? "なし" : `${n}名`}
+                  {n !== positions.length && n !== 0 ? `＋相手${positions.length - n}` : ""}
+                </button>
+              ))}
+            </div>
+
+            {g.no > 1 && (
+              <div className="cond-row">
+                <span className="split-row__label">結果しだいで審判が必要？</span>
+                <div className="chip-grid">
+                  <button
+                    type="button"
+                    className={`chip-btn${cs === "none" ? " is-active" : ""}`}
+                    disabled={!editable || busyKey === `cond-${g.id}`}
+                    onClick={() => cs !== "none" && onSetCondition(g, null)}
+                  >
+                    いつも必要
+                  </button>
+                  {sorted
+                    .filter((x) => x.no < g.no)
+                    .flatMap((x) =>
+                      (["lose", "win"] as const).map((result) => (
+                        <button
+                          key={`${x.no}-${result}`}
+                          type="button"
+                          className={`chip-btn${g.umpireCondGame === x.no && g.umpireCondResult === result ? " is-active" : ""}`}
+                          disabled={!editable || busyKey === `cond-${g.id}`}
+                          onClick={() => onSetCondition(g, { game: x.no, result })}
+                        >
+                          第{x.no}試合に{result === "lose" ? "負けたら" : "勝ったら"}
+                        </button>
+                      )),
+                    )}
+                </div>
+                {cs !== "none" && (
+                  <div className="cond-result">
+                    <span className="split-row__label">第{g.umpireCondGame}試合の結果</span>
+                    <div className="chip-grid">
+                      {([null, "lose", "win"] as const).map((o) => (
+                        <button
+                          key={String(o)}
+                          type="button"
+                          className={`chip-btn${(g.umpireCondOutcome ?? null) === o ? " is-active" : ""}`}
+                          disabled={!editable || busyKey === `cond-${g.id}`}
+                          onClick={() => onSetOutcome(g, o)}
+                        >
+                          {o === null ? "まだ" : o === "lose" ? "負けた" : "勝った"}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="field__hint">
+                      {cs === "pending"
+                        ? `${condText(g)}審判が必要です。結果が決まるまでは「空き」に数えません。`
+                        : cs === "yes"
+                          ? "審判が必要になりました。"
+                          : "審判は不要になりました。"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className={`slot-grid slot-grid--${positions.length}`}>
               {positions.map((pos) => {

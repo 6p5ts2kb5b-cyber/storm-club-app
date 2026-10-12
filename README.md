@@ -76,6 +76,7 @@ STORMクラブの活動準備（グラウンド・選手集合時間・指導者
 15. `0015_tournaments.sql` … 大会名の登録
 16. `0016_tournament_not_held_rest.sql` … 大会が実施されない場合も休養日にできる
 17. `0017_reserve2.sql` … 予備日の予備日
+18. `0018_umpire_condition.sql` … 結果しだいで必要になる審判（「1試合目に負けたら3試合目に審判」など）
 
 ## スタッフ用の予定表（/print）
 

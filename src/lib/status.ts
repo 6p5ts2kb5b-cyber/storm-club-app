@@ -24,6 +24,12 @@ export interface Game {
   umpireTeam?: string;
   /** 審判の人数制（1〜4人制。基本は4人制） */
   system?: 1 | 2 | 3 | 4;
+  /** 結果しだいで審判が必要になる条件：どの試合の結果か（例：1 = 第1試合） */
+  umpireCondGame?: number;
+  /** 審判が必要になる結果（lose = 負けたら / win = 勝ったら） */
+  umpireCondResult?: "lose" | "win";
+  /** 実際の結果（未入力ならまだ決まっていない） */
+  umpireCondOutcome?: "lose" | "win";
   note?: string;
 }
 
@@ -121,6 +127,8 @@ export interface UnitSummary {
   reserve2Umpires?: string[];
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
+  /** 結果しだいで必要になる審判の空き（例：「第3試合（第1試合に負けたら）あと2枠」） */
+  umpireConditional?: string[];
 }
 
 export interface DaySummary {
@@ -194,6 +202,10 @@ export function checkUnit(u: UnitSummary): CheckItem[] {
         ? { key: "umpire", label: "審判", level: "ok", text: `確定（${u.umpireAssigned}名）` }
         : { key: "umpire", label: "審判", level: "ng", text: `あと${short}名（${u.umpireAssigned}/${u.umpireNeeded}名）` },
     );
+  }
+
+  if (u.umpireRequired && u.umpireConditional?.length) {
+    items.push({ key: "umpireCond", label: "審判(条件つき)", level: "warn", text: `${u.umpireConditional.join("・")}（結果しだい）` });
   }
 
   // 審判集合時間

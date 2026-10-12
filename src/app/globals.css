@@ -4114,3 +4114,9 @@ select.input {
   .page > * { opacity: 1 !important; transform: none !important; }
   .pl-row, .pl-row td { break-inside: avoid; page-break-inside: avoid; }
 }
+
+/* 審判：分け方・結果しだいの条件 */
+.split-row, .cond-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; }
+.split-row__label { width: 100%; font-size: 12px; font-weight: 700; color: #555; }
+.cond-result { width: 100%; margin-top: 6px; display: grid; gap: 4px; }
+.slot-game__state.is-warn { color: #8a5a00; }

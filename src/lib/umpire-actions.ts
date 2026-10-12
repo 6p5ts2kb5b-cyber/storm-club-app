@@ -85,3 +85,27 @@ export async function savePerson(
   );
   return error ? { ok: false, message: explain(error, true) } : { ok: true };
 }
+
+/** 結果しだいの条件を保存（game=null なら条件なし）。条件を変えたら結果は未入力に戻す */
+export async function setGameCondition(
+  gameId: string,
+  cond: { game: number; result: "lose" | "win" } | null,
+): Promise<UmpireResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("games")
+    .update({
+      umpire_cond_game: cond?.game ?? null,
+      umpire_cond_result: cond?.result ?? null,
+      umpire_cond_outcome: null,
+    })
+    .eq("id", gameId);
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}
+
+/** その試合の実際の結果（負けた／勝った）。null ならまだ決まっていない */
+export async function setGameOutcome(gameId: string, outcome: "lose" | "win" | null): Promise<UmpireResult> {
+  const supabase = createClient();
+  const { error } = await supabase.from("games").update({ umpire_cond_outcome: outcome }).eq("id", gameId);
+  return error ? { ok: false, message: explain(error) } : { ok: true };
+}

@@ -6,6 +6,8 @@ import { DIVISION_LABEL, formatDateLong, formatTime } from "./divisions";
 import { mdw } from "./reserve";
 import { isRest, reserveText, restWhy, type UnitSummary } from "./status";
 import {
+  condState,
+  condText,
   isFilled,
   matchupText,
   POSITION_LABEL,
@@ -72,22 +74,26 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
     const slots = unit.umpireSlots ?? [];
     const rows: string[] = [];
     for (const g of games) {
+      const cs = condState(g);
+      if (cs === "no") continue;
+      const tag = cs === "pending" ? `（${condText(g)}、審判をお願いする場合があります）` : "";
+      const add = (t: string) => rows.push(`${t}${tag}`);
       const positions = SYSTEM_POSITIONS[systemOf(g)];
       const mine = positions.map((pos) => ({ pos, slot: slots.find((s) => s.gameId === g.id && s.position === pos) }));
       if (mine.every((m) => !isFilled(m.slot))) {
-        rows.push(`第${g.no}試合　未定`);
+        add(`第${g.no}試合　未定`);
         continue;
       }
       const team = umpireTeamLabel(g);
       if (mine.every((m) => m.slot?.opponent)) {
-        rows.push(`第${g.no}試合　${team}`);
+        add(`第${g.no}試合　${team}`);
         continue;
       }
       const parts = mine.map(({ pos, slot }) => {
         const who = slot?.opponent ? team : slot?.staffId ? slot.staffName ?? "（不明）" : "未定";
         return `${POSITION_LABEL[pos]} ${who}`;
       });
-      rows.push(`第${g.no}試合　${parts.join("／")}`);
+      add(`第${g.no}試合　${parts.join("／")}`);
     }
     lines.push("");
     lines.push(`■審判（${[...new Set(games.map((g) => SYSTEM_LABEL[systemOf(g)]))].join("・")}）`);
