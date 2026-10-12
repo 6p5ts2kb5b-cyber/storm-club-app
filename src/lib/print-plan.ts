@@ -271,7 +271,7 @@ export function buildRows(days: DaySummary[], divisions: Division[], dates: stri
         heading: reserveHeading(r),
         name: r.name,
         postponed: `${r.name}${r.venue ? `（${r.venue}）` : ""}`,
-        held,
+        held: r.plan || held,
         umpires:
           r.needed > 0 || r.umpires.length ? `${r.umpireGather ? `審判集合 ${r.umpireGather}　` : ""}${umpireStatusText(r.umpires, r.needed)}` : "",
       })),

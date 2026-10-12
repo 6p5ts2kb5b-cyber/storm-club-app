@@ -23,6 +23,8 @@ export interface ReserveInfo {
   level: 1 | 2;
   /** 審判の集合時間（例：7:45。なければ空） */
   umpireGather: string;
+  /** 大会が実施された場合の、この日の予定（例：休養日・練習・JJBF大会 2日目）。空なら、この日の登録内容から決める */
+  plan: string;
   /** 予備日の予備日のとき：ひとつ目の予備日 */
   firstDate?: string;
 }
@@ -49,6 +51,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
         umpires: u.reserveUmpires ?? [],
         needed: u.umpireRequired ? u.umpireNeeded : 0,
         level: 1,
+        plan: u.reservePlan ?? "",
         umpireGather: u.umpireRequired && u.umpireGatherTime ? formatTime(u.umpireGatherTime) : "",
       };
       map.set(u.reserveDate, [...(map.get(u.reserveDate) ?? []), info]);
@@ -58,6 +61,7 @@ export function reservesByDate(days: DaySummary[]): Map<string, ReserveInfo[]> {
           venue: u.reserve2Venue || info.venue,
           umpires: u.reserve2Umpires ?? [],
           level: 2,
+          plan: u.reserve2Plan ?? "",
           firstDate: u.reserveDate,
         };
         map.set(u.reserve2Date, [...(map.get(u.reserve2Date) ?? []), info2]);

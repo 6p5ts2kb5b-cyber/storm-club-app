@@ -33,7 +33,13 @@ export default function ReservePanel({
   baseDate,
   umpireNeeded = 0,
   embedded = false,
+  plan,
+  planBase = "大会",
 }: {
+  /** 大会が実施された場合の、予備日の予定 */
+  plan?: string;
+  /** 「大会2日目」などの名前のもと（例：JJBF大会） */
+  planBase?: string;
   /** この予備日のもとになる日（当日 または ひとつ前の予備日）。日付の選びやすいボタンに使う */
   baseDate?: string;
   /** 必要な審判の人数（0 = 不要・未設定） */
@@ -54,7 +60,7 @@ export default function ReservePanel({
   /** 会場の候補（候補グラウンドの名前など） */
   venueChoices: string[];
   isAdmin: boolean;
-  onSave: (date: string | null, name: string | null, venue: string | null, umpires: string[]) => Promise<boolean>;
+  onSave: (date: string | null, name: string | null, venue: string | null, umpires: string[], plan: string | null) => Promise<boolean>;
   /** 1 = 予備日 / 2 = 予備日の予備日 */
   level?: 1 | 2;
 }) {
@@ -62,6 +68,7 @@ export default function ReservePanel({
   const [n, setN] = useState(name ?? "");
   const [v, setV] = useState(venue ?? "");
   const [u, setU] = useState<string[]>(umpires);
+  const [p, setP] = useState(plan ?? "");
   const [busy, setBusy] = useState(false);
   const label = level === 2 ? "予備日の予備日" : "予備日";
   const Wrap = embedded ? "div" : "section";
@@ -80,15 +87,16 @@ export default function ReservePanel({
     setN(name ?? "");
     setV(venue ?? "");
     setU(umpires);
+    setP(plan ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, name, venue, umpires.join("、")]);
+  }, [date, name, venue, plan, umpires.join("、")]);
 
   if (!isAdmin && !date) return null;
 
-  const changed = d !== (date ?? "") || n !== (name ?? "") || v !== (venue ?? "") || u.join("、") !== umpires.join("、");
+  const changed = p !== (plan ?? "") || d !== (date ?? "") || n !== (name ?? "") || v !== (venue ?? "") || u.join("、") !== umpires.join("、");
   async function save(nextDate: string | null) {
     setBusy(true);
-    await onSave(nextDate, n || null, v || null, u);
+    await onSave(nextDate, n || null, v || null, u, p || null);
     setBusy(false);
   }
 
@@ -118,6 +126,7 @@ export default function ReservePanel({
               setD("");
               setN("");
               setV("");
+              setP("");
               void save(null);
             }}
           >
@@ -160,6 +169,27 @@ export default function ReservePanel({
                 {c}
               </button>
             ))}
+          </div>
+          <div className="field">
+            <span className="field__label">
+              大会が予定どおり実施されたとき、{mdw(d)}の予定
+              {p ? `：${p}` : "（未選択）"}
+            </span>
+            <div className="pr-chips">
+              {[
+                "休養日",
+                "練習",
+                `${planBase} 2日目`,
+                `${planBase} 3日目`,
+              ].map((c) => (
+                <button key={c} type="button" className={`pr-chip${p === c ? " is-on" : ""}`} disabled={busy} onClick={() => setP(p === c ? "" : c)}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <span className="field__label">他の大会にする場合（名前を選ぶか、入力）</span>
+            <TournamentNameChips names={tournaments} value={p} isAdmin={isAdmin} demo={demo} disabled={busy} onPick={setP} />
+            <input className="input" value={p} disabled={busy} onChange={(e) => setP(e.target.value)} placeholder="例：○○大会 1日目（空なら、この日の登録内容どおり）" />
           </div>
           <div className="field">
             <span className="field__label">

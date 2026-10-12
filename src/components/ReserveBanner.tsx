@@ -23,7 +23,7 @@ export default function ReserveBanner({ reserves, heldPlan }: { reserves: Reserv
           )}
           <p className="rsv-banner__row">
             <span>実施のとき</span>
-            <b>{heldPlan}</b>
+            <b>{r.plan || heldPlan}</b>
           </p>
         </div>
       ))}

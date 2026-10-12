@@ -145,7 +145,7 @@ export default function DivisionTabs({
     return true;
   }
 
-  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null, rUmpires: string[], level: 1 | 2 = 1): Promise<boolean> {
+  async function changeReserve(rDate: string | null, rName: string | null, rVenue: string | null, rUmpires: string[], rPlan: string | null, level: 1 | 2 = 1): Promise<boolean> {
     if (!unit) return false;
     const patch: Partial<UnitSummary> =
       level === 2
@@ -153,20 +153,22 @@ export default function DivisionTabs({
             reserve2Date: rDate ?? undefined,
             reserve2Venue: rDate && rVenue ? rVenue : undefined,
             reserve2Umpires: rDate && rUmpires.length ? rUmpires : undefined,
+            reserve2Plan: rDate && rPlan ? rPlan : undefined,
           }
         : {
             reserveDate: rDate ?? undefined,
             reserveName: rDate && rName ? rName : undefined,
             reserveVenue: rDate && rVenue ? rVenue : undefined,
             reserveUmpires: rDate && rUmpires.length ? rUmpires : undefined,
-            ...(rDate ? {} : { reserve2Date: undefined, reserve2Venue: undefined, reserve2Umpires: undefined }),
+            reservePlan: rDate && rPlan ? rPlan : undefined,
+            ...(rDate ? {} : { reserve2Date: undefined, reserve2Venue: undefined, reserve2Umpires: undefined, reserve2Plan: undefined }),
           };
     if (demo || !unit.id) {
       patchActive(patch);
       showToast("ok", "保存しました（お試しモード）");
       return true;
     }
-    const result = await saveReserve(unit.id, rDate, rName, rVenue, rUmpires, level);
+    const result = await saveReserve(unit.id, rDate, rName, rVenue, rUmpires, level, rPlan);
     if (!result.ok) {
       showToast("ng", result.message);
       return false;
@@ -283,6 +285,8 @@ export default function DivisionTabs({
               umpireNeeded={unit.umpireRequired ? unit.umpireNeeded : 0}
               date={unit.reserveDate}
               name={unit.reserveName}
+              plan={unit.reservePlan}
+              planBase={unit.tournamentName || unit.activityType || "大会"}
               venue={unit.reserveVenue}
               umpires={unit.reserveUmpires ?? []}
               tournaments={tournaments}
@@ -301,6 +305,8 @@ export default function DivisionTabs({
                 baseDate={unit.reserveDate}
                 umpireNeeded={unit.umpireRequired ? unit.umpireNeeded : 0}
                 date={unit.reserve2Date}
+                plan={unit.reserve2Plan}
+                planBase={unit.tournamentName || unit.activityType || "大会"}
                 venue={unit.reserve2Venue}
                 umpires={unit.reserve2Umpires ?? []}
                 umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
@@ -309,7 +315,7 @@ export default function DivisionTabs({
                 defaultName={unit.activityType ?? ""}
                 venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
                 isAdmin={isAdmin}
-                onSave={(a, b, c, e) => changeReserve(a, b, c, e, 2)}
+                onSave={(a, b, c, e, f) => changeReserve(a, b, c, e, f, 2)}
               />
             )}
           </section>

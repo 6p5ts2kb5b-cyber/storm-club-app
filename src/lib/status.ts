@@ -125,6 +125,10 @@ export interface UnitSummary {
   reserve2Date?: string;
   reserve2Venue?: string;
   reserve2Umpires?: string[];
+  /** 大会が実施された場合の、予備日の予定（例：休養日・練習・JJBF大会 2日目） */
+  reservePlan?: string;
+  /** 同じく、予備日の予備日の予定 */
+  reserve2Plan?: string;
   /** 空いている審判ポジション（例：「第1試合 二塁審」） */
   openPositions: string[];
   /** 結果しだいで必要になる審判の空き（例：「第3試合（第1試合に負けたら）あと2枠」） */
