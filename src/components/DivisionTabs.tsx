@@ -20,7 +20,7 @@ import Lamp from "@/components/Lamp";
 import ReserveBanner from "@/components/ReserveBanner";
 import ReservePanel from "@/components/ReservePanel";
 import TournamentPanel from "@/components/TournamentPanel";
-import type { ReserveInfo } from "@/lib/reserve";
+import { mdw, type ReserveInfo } from "@/lib/reserve";
 import { checkUnit, type Game, isRest, type Level, type TournamentState, type UnitSummary, worstLevel } from "@/lib/status";
 import { saveReserve, saveTournament } from "@/lib/activity-actions";
 import { deriveUmpire } from "@/lib/umpire";
@@ -260,39 +260,59 @@ export default function DivisionTabs({
 
       {unit && !rest && (
         <div className="detail-block" id="sec-reserve">
-          <ReservePanel
-            key={`reserve-${unit.division}`}
-            date={unit.reserveDate}
-            name={unit.reserveName}
-            venue={unit.reserveVenue}
-            umpires={unit.reserveUmpires ?? []}
-            tournaments={tournaments}
-            demo={demo}
-            umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
-            defaultName={unit.activityType ?? ""}
-            venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
-            isAdmin={isAdmin}
-            onSave={changeReserve}
-          />
-        </div>
-      )}
-
-      {unit && !rest && unit.reserveDate && (
-        <div className="detail-block" id="sec-reserve2">
-          <ReservePanel
-            key={`reserve2-${unit.division}`}
-            level={2}
-            date={unit.reserve2Date}
-            venue={unit.reserve2Venue}
-            umpires={unit.reserve2Umpires ?? []}
-            umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
-            tournaments={tournaments}
-            demo={demo}
-            defaultName={unit.activityType ?? ""}
-            venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
-            isAdmin={isAdmin}
-            onSave={(a, b, c, e) => changeReserve(a, b, c, e, 2)}
-          />
+          <section className="panel rsv-card">
+            <h2 className="panel__title">予備日（雨などで大会が延期になったとき）</h2>
+            <ol className="rsv-flow" aria-label="延期の流れ">
+              <li className="is-now">
+                <small>当日</small>
+                <b>{mdw(date)}</b>
+              </li>
+              <li className={unit.reserveDate ? "is-set" : ""}>
+                <small>予備日</small>
+                <b>{unit.reserveDate ? mdw(unit.reserveDate) : "未設定"}</b>
+              </li>
+              <li className={unit.reserve2Date ? "is-set" : ""}>
+                <small>予備日の予備日</small>
+                <b>{unit.reserve2Date ? mdw(unit.reserve2Date) : "未設定"}</b>
+              </li>
+            </ol>
+            <ReservePanel
+              key={`reserve-${unit.division}`}
+              embedded
+              baseDate={date}
+              umpireNeeded={unit.umpireRequired ? unit.umpireNeeded : 0}
+              date={unit.reserveDate}
+              name={unit.reserveName}
+              venue={unit.reserveVenue}
+              umpires={unit.reserveUmpires ?? []}
+              tournaments={tournaments}
+              demo={demo}
+              umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
+              defaultName={unit.activityType ?? ""}
+              venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
+              isAdmin={isAdmin}
+              onSave={changeReserve}
+            />
+            {unit.reserveDate && (
+              <ReservePanel
+                key={`reserve2-${unit.division}`}
+                embedded
+                level={2}
+                baseDate={unit.reserveDate}
+                umpireNeeded={unit.umpireRequired ? unit.umpireNeeded : 0}
+                date={unit.reserve2Date}
+                venue={unit.reserve2Venue}
+                umpires={unit.reserve2Umpires ?? []}
+                umpireChoices={staff.filter((s) => s.is_active && s.can_umpire).map((s) => s.name)}
+                tournaments={tournaments}
+                demo={demo}
+                defaultName={unit.activityType ?? ""}
+                venueChoices={[...new Set((unit.grounds ?? []).map((g) => g.school_name).filter(Boolean))]}
+                isAdmin={isAdmin}
+                onSave={(a, b, c, e) => changeReserve(a, b, c, e, 2)}
+              />
+            )}
+          </section>
         </div>
       )}
 

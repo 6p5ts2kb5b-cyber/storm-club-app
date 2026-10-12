@@ -4120,3 +4120,17 @@ select.input {
 .split-row__label { width: 100%; font-size: 12px; font-weight: 700; color: #555; }
 .cond-result { width: 100%; margin-top: 6px; display: grid; gap: 4px; }
 .slot-game__state.is-warn { color: #8a5a00; }
+
+/* 予備日の入力：ひとつのカードに「当日 → 予備日 → 予備日の予備日」 */
+.rsv-flow { display: flex; align-items: stretch; gap: 6px; margin: 8px 0 12px; padding: 0; list-style: none; }
+.rsv-flow li { flex: 1; min-width: 0; padding: 6px 8px; border: 1.5px dashed #b8c2b8; border-radius: 10px; text-align: center; background: #fff; }
+.rsv-flow li small { display: block; font-size: 11px; color: #666; }
+.rsv-flow li b { font-size: 14px; color: #888; }
+.rsv-flow li.is-now { border-style: solid; border-color: #14342a; }
+.rsv-flow li.is-now b { color: #14342a; }
+.rsv-flow li.is-set { border-style: solid; border-color: #8fb4e8; background: #eaf2fd; }
+.rsv-flow li.is-set b { color: #1c5fb0; }
+.rsv-step { display: grid; gap: 10px; margin-top: 10px; padding: 12px; border: 1.5px solid #cfd6cf; border-radius: 12px; background: #fff; }
+.rsv-step--2 { border-color: #c9d6ee; }
+.rsv-count { font-size: 13px; color: #b3261e; }
+.rsv-count--ok { color: #1b7a3a; }
