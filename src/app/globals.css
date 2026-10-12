@@ -4335,3 +4335,344 @@ select.input {
   font-weight: 700;
   color: var(--ink-2);
 }
+
+/* ランニングスコアの入力 */
+.line-open {
+  align-self: flex-start;
+  padding: 6px 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--board);
+  text-decoration: underline;
+}
+.line-ed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.line-ed__scroll {
+  overflow-x: auto;
+}
+.line-ed__table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.line-ed__table th {
+  padding: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-3);
+  text-align: center;
+}
+.line-ed__team {
+  max-width: 4.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left !important;
+  color: var(--ink) !important;
+  font-size: 12px !important;
+}
+.line-ed__table td {
+  padding: 1px;
+}
+.line-ed__table input {
+  width: 30px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  text-align: center;
+  font-family: var(--num);
+  font-size: 17px;
+  font-weight: 800;
+  -moz-appearance: textfield;
+}
+.line-ed__table input::-webkit-outer-spin-button,
+.line-ed__table input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.line-ed__sum {
+  min-width: 30px;
+  text-align: center;
+  font-family: var(--num);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 結果カードのランニングスコア */
+.rc__line-wrap {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+}
+.rc__line {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-family: var(--num);
+  font-size: 15px;
+}
+.rc__line th {
+  padding: 3px 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: #123f31;
+  text-align: center;
+}
+.rc__line td {
+  padding: 5px 0;
+  text-align: center;
+  font-weight: 700;
+  border: 1px solid #dfe5dc;
+}
+.rc__line td.rc__line-team {
+  width: 34%;
+  padding-left: 6px;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+}
+.rc__line td.rc__line-sum {
+  font-size: 17px;
+  font-weight: 800;
+  color: #c42b3b;
+}
+.rc__line tr.is-us td {
+  background: #fff6cf;
+}
+
+/* 結果を保護者に送る：画面全体のシート */
+.lg__send {
+  width: 100%;
+  margin-top: 4px;
+}
+.rs-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  background: rgba(10, 30, 22, 0.55);
+  padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 20px);
+}
+.rs-sheet__inner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--paper);
+}
+.rs-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rs-sheet__head p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+}
+.rs-sheet__close {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 18px;
+  font-weight: 800;
+}
+.rs-sheet__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.rs-sheet__field textarea {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  font-size: 15px;
+}
+.rs-sheet__btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rs-sheet__note {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #b06a00;
+}
+.rs-sheet__text summary {
+  font-size: 13px;
+  font-weight: 800;
+}
+.rs-sheet__text pre {
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 送る絵（結果カード）：幅600pxで組む */
+.rc {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  color: #111;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #d8ded5;
+  font-family: var(--sans);
+  padding-bottom: 14px;
+}
+.rc__head {
+  padding: 16px 18px 14px;
+  background: #123f31;
+  color: #fff;
+}
+.rc__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+.rc__date {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+.rc__label {
+  margin: 14px 18px 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #123f31;
+  letter-spacing: 0.1em;
+}
+.rc__games {
+  margin: 0 14px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rc__game {
+  display: grid;
+  grid-template-columns: 26px 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  background: #f3f5f2;
+}
+.rc__no {
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+.rc__team {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.rc__team--a {
+  text-align: right;
+}
+.rc__team.is-win {
+  font-weight: 900;
+}
+.rc__team.is-us {
+  color: #123f31;
+  font-weight: 900;
+}
+.rc__score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--num);
+}
+.rc__score b {
+  min-width: 1.2em;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: #777;
+}
+.rc__score b.is-win {
+  color: #c42b3b;
+}
+.rc__score i {
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 800;
+  color: #555;
+}
+.rc__table {
+  width: calc(100% - 28px);
+  margin: 0 14px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.rc__table th {
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #555;
+  border-bottom: 2px solid #123f31;
+}
+.rc__table td {
+  padding: 9px 4px;
+  text-align: center;
+  font-weight: 700;
+  border-bottom: 1px solid #e0e5dd;
+}
+.rc__table td:nth-child(2) {
+  text-align: left;
+}
+.rc__table tr.is-us td {
+  background: #fff6cf;
+  font-weight: 900;
+}
+.rc__msg {
+  margin: 14px 14px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f3f5f2;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.rc__msg.is-win {
+  background: #e5f6eb;
+  color: #157a3c;
+  font-size: 18px;
+}
+.rc__rule {
+  margin: 10px 18px 0;
+  font-size: 10.5px;
+  color: #777;
+  line-height: 1.5;
+}
+.line-ed__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

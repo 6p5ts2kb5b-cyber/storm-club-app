@@ -311,6 +311,28 @@ export async function elementToPdf(
   }
 }
 
+// 要素を画像（PNG）にする。幅 width で組んでからえがく（LINEで、そのまま見られる画像）
+export async function elementToPng(source: HTMLElement, filename: string, width = 600): Promise<File> {
+  await document.fonts?.ready;
+  const host = document.createElement("div");
+  host.style.cssText = `position:fixed;left:-20000px;top:0;width:${width}px;background:#fff;`;
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.style.transform = "none";
+  clone.style.margin = "0";
+  clone.style.position = "static";
+  clone.style.width = `${width}px`;
+  host.appendChild(clone);
+  document.body.appendChild(host);
+  try {
+    normalizeColors(clone);
+    const c = domToCanvas(clone, 2);
+    const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
+    return new File([blob], filename, { type: "image/png" });
+  } finally {
+    host.remove();
+  }
+}
+
 // スマホの「共有」画面で送る。共有できない（パソコンなど）ときは保存する
 export async function shareOrDownload(file: File, title: string): Promise<"shared" | "downloaded" | "cancelled"> {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };

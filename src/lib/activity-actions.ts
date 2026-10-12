@@ -292,6 +292,10 @@ export interface GameResult {
   onBaseB: number | null;
   called: boolean;
   innings: number | null;
+  /** ランニングスコア（回ごとの点）と先攻 */
+  lineA: (number | null)[];
+  lineB: (number | null)[];
+  firstBat: "a" | "b";
 }
 
 export type GameSaveResult =
@@ -311,6 +315,9 @@ export type GameSaveResult =
         onBaseB?: number;
         called?: boolean;
         innings?: number;
+        lineA?: (number | null)[];
+        lineB?: (number | null)[];
+        firstBat?: "a" | "b";
         note?: string;
       };
     }
@@ -321,7 +328,7 @@ function explainGame(err: { message?: string; code?: string } | null | undefined
   if (err?.code === "23505" || /duplicate|unique/i.test(message)) return "同じ番号の試合がすでにあります。画面を再読み込みしてから、もう一度お試しください。";
   if (err?.code === "42501" || /row-level security|permission/i.test(message)) return "試合の登録・変更は管理者だけができます。";
   if (/fetch|network/i.test(message)) return "インターネットにつながっていません。電波の良い場所でもう一度保存してください。";
-  if (/column|schema cache/i.test(message)) return "データベースの更新（0009・0020）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。";
+  if (/column|schema cache/i.test(message)) return "データベースの更新（0009・0020・0021）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。";
   return "保存できませんでした。時間をおいてもう一度お試しください。";
 }
 
@@ -344,10 +351,13 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
           onbase_b: r.onBaseB,
           called: r.called,
           innings: r.innings,
+          line_a: r.lineA.some((v) => v != null) ? r.lineA : null,
+          line_b: r.lineB.some((v) => v != null) ? r.lineB : null,
+          first_bat: r.firstBat,
         }
       : {}),
   };
-  const cols = `id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,note${r ? ",score_a,score_b,onbase_a,onbase_b,called,innings" : ""}`;
+  const cols = `id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,note${r ? ",score_a,score_b,onbase_a,onbase_b,called,innings,line_a,line_b,first_bat" : ""}`;
   const { data, error } = id
     ? await supabase.from("games").update(values).eq("id", id).select(cols).single()
     : await supabase.from("games").insert({ unit_id: unitId, game_no: gameNo, ...values }).select(cols).single();
@@ -367,6 +377,9 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
     onbase_b?: number | null;
     called?: boolean | null;
     innings?: number | null;
+    line_a?: (number | null)[] | null;
+    line_b?: (number | null)[] | null;
+    first_bat?: string | null;
   };
   return {
     ok: true,
@@ -384,6 +397,9 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
       onBaseB: row.onbase_b ?? undefined,
       called: row.called ?? undefined,
       innings: row.innings ?? undefined,
+      lineA: row.line_a ?? undefined,
+      lineB: row.line_b ?? undefined,
+      firstBat: row.first_bat === "b" ? "b" : undefined,
       note: row.note ?? undefined,
     },
   };

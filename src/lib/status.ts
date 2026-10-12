@@ -39,6 +39,11 @@ export interface Game {
   /** コールドゲーム／試合の回数（STORM杯用） */
   called?: boolean;
   innings?: number;
+  /** ランニングスコア（回ごとの点。空の回は null）：先に書いたチーム／相手 */
+  lineA?: (number | null)[];
+  lineB?: (number | null)[];
+  /** 先攻（a = 先に書いたチーム、b = 相手。空なら a） */
+  firstBat?: "a" | "b";
   note?: string;
 }
 

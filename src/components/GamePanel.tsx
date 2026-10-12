@@ -4,6 +4,7 @@
 import { useState } from "react";
 import TimeField, { shiftTime } from "@/components/TimeField";
 import LeaguePanel from "@/components/LeaguePanel";
+import ResultSend from "@/components/ResultSend";
 import { deleteGame, type GameInput, saveGame } from "@/lib/activity-actions";
 import { formatTime } from "@/lib/divisions";
 import { leagueRuleOf, OUR, parseRef } from "@/lib/league";
@@ -97,6 +98,115 @@ function ScoreRow({
   );
 }
 
+type Result = NonNullable<GameInput["result"]>;
+
+// ランニングスコア（回ごとの点）の入力。入れると合計が上の「結果」に自動で入る
+function LineEditor({
+  left,
+  right,
+  g,
+  onChange,
+}: {
+  left: string;
+  right: string;
+  g: Result;
+  onChange: (p: Partial<Result>) => void;
+}) {
+  const lh = g.lineA;
+  const la = g.lineB;
+  const [open, setOpen] = useState(lh.some((v) => v != null) || la.some((v) => v != null));
+  const [cols, setCols] = useState(Math.max(7, lh.length, la.length));
+  const first = g.firstBat === "b" ? "r" : "l";
+  // 先攻を上の段に
+  const rows: { side: "l" | "r"; name: string; vals: (number | null)[] }[] =
+    first === "l"
+      ? [
+          { side: "l", name: left, vals: lh },
+          { side: "r", name: right, vals: la },
+        ]
+      : [
+          { side: "r", name: right, vals: la },
+          { side: "l", name: left, vals: lh },
+        ];
+  const sum = (v: (number | null)[]) => (v.some((x) => x != null) ? v.reduce<number>((t, x) => t + (x ?? 0), 0) : null);
+  const setCell = (side: "l" | "r", i: number, v: number | null) => {
+    const cur = [...(side === "l" ? lh : la)];
+    while (cur.length < cols) cur.push(null);
+    cur[i] = v;
+    // 後ろの空いた回は切る
+    while (cur.length && cur[cur.length - 1] == null) cur.pop();
+    const nl = side === "l" ? cur : lh;
+    const nr = side === "r" ? cur : la;
+    onChange({ lineA: nl, lineB: nr, scoreA: sum(nl) ?? g.scoreA, scoreB: sum(nr) ?? g.scoreB });
+  };
+  if (!open)
+    return (
+      <button type="button" className="line-open" onClick={() => setOpen(true)}>
+        ＋ ランニングスコア（回ごとの点）を入れる
+      </button>
+    );
+  return (
+    <div className="line-ed">
+      <div className="line-ed__row">
+        <span className="score-row__label">先攻</span>
+        <div className="seg seg--2" role="group" aria-label="先攻">
+          <button type="button" aria-pressed={first === "l"} className={`seg__btn${first === "l" ? " is-active" : ""}`} onClick={() => onChange({ firstBat: "a" })}>
+            {left}
+          </button>
+          <button type="button" aria-pressed={first === "r"} className={`seg__btn${first === "r" ? " is-active" : ""}`} onClick={() => onChange({ firstBat: "b" })}>
+            {right}
+          </button>
+        </div>
+      </div>
+      <div className="line-ed__scroll">
+        <table className="line-ed__table">
+          <thead>
+            <tr>
+              <th />
+              {Array.from({ length: cols }, (_, i) => (
+                <th key={i}>{i + 1}</th>
+              ))}
+              <th>計</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.side}>
+                <th className="line-ed__team">{r.name}</th>
+                {Array.from({ length: cols }, (_, i) => (
+                  <td key={i}>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={30}
+                      value={r.vals[i] ?? ""}
+                      placeholder="－"
+                      aria-label={`${r.name} ${i + 1}回`}
+                      onChange={(e) =>
+                        setCell(r.side, i, e.target.value === "" ? null : Math.max(0, Math.min(30, Number(e.target.value))))
+                      }
+                    />
+                  </td>
+                ))}
+                <td className="line-ed__sum">{sum(r.vals) ?? ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="line-ed__row">
+        <span className="field__hint">裏の攻撃をしなかった回は空のまま（表に「X」と出ます）。</span>
+        {cols < 10 && (
+          <button type="button" className="btn btn--outline" onClick={() => setCols(cols + 1)}>
+            ＋延長
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const emptyResult = (): NonNullable<GameInput["result"]> => ({
   scoreA: null,
   scoreB: null,
@@ -104,9 +214,16 @@ const emptyResult = (): NonNullable<GameInput["result"]> => ({
   onBaseB: null,
   called: false,
   innings: null,
+  lineA: [],
+  lineB: [],
+  firstBat: "a",
 });
 
 /** 「第1試合の負け」→「B中とC中の敗者」のように短く（その試合が他チーム同士のとき） */
+function sideName(t: string, games: Game[], thisNo: number): string {
+  return teamName(t, games, thisNo);
+}
+
 function teamName(t: string, games: Game[], thisNo: number): string {
   const r = parseRef(t);
   if (!r) return t.trim();
@@ -123,6 +240,8 @@ export default function GamePanel({
   games,
   tournamentName,
   activityType,
+  title,
+  date,
   canEdit,
   demo,
   onChange,
@@ -132,6 +251,10 @@ export default function GamePanel({
   games: Game[];
   tournamentName?: string;
   activityType?: string;
+  /** 結果カードに出す大会名 */
+  title?: string;
+  /** 活動日 "2026-10-24" */
+  date?: string;
   canEdit: boolean;
   demo: boolean;
   onChange: (next: Game[]) => void;
@@ -181,6 +304,9 @@ export default function GamePanel({
           onBaseB: g.onBaseB ?? null,
           called: g.called === true,
           innings: g.innings ?? null,
+          lineA: g.lineA ?? [],
+          lineB: g.lineB ?? [],
+          firstBat: g.firstBat ?? "a",
         },
       },
     });
@@ -209,6 +335,9 @@ export default function GamePanel({
               onBaseB: editing.form.result.onBaseB ?? undefined,
               called: editing.form.result.called || undefined,
               innings: editing.form.result.innings ?? undefined,
+              lineA: editing.form.result.lineA.some((v) => v != null) ? editing.form.result.lineA : undefined,
+              lineB: editing.form.result.lineB.some((v) => v != null) ? editing.form.result.lineB : undefined,
+              firstBat: editing.form.result.firstBat === "b" ? "b" : undefined,
             }
           : {}),
         note: editing.form.note.trim() || undefined,
@@ -303,6 +432,9 @@ export default function GamePanel({
       )}
 
       {rule && <LeaguePanel games={games} tournamentName={tournamentName} type={activityType} />}
+      {rule && canEdit && date && (
+        <ResultSend games={games} tournamentName={tournamentName} type={activityType} title={title || activityType || "大会"} date={date} />
+      )}
 
       {editing && (
         <div className="sheet-backdrop" role="presentation" onClick={() => !busy && setEditing(null)}>
@@ -399,6 +531,20 @@ export default function GamePanel({
                 storm={rule === "storm"}
                 called={editing.form.result.called}
                 inn={editing.form.result.innings}
+                onChange={(p) =>
+                  setEditing((s) => (s && s.form.result ? { ...s, form: { ...s.form, result: { ...s.form.result, ...p } } } : s))
+                }
+              />
+            )}
+            {rule && editing.form.result && (
+              <LineEditor
+                key={`line-${editing.no}`}
+                left={sideName(editing.form.stormPlays ? OUR : editing.form.opponent, games, editing.no) || "チームA"}
+                right={
+                  sideName(editing.form.stormPlays ? editing.form.opponent : editing.form.opponent2, games, editing.no) ||
+                  (editing.form.stormPlays ? "相手" : "チームB")
+                }
+                g={editing.form.result}
                 onChange={(p) =>
                   setEditing((s) => (s && s.form.result ? { ...s, form: { ...s.form, result: { ...s.form.result, ...p } } } : s))
                 }

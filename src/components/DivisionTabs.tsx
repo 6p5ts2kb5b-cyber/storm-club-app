@@ -331,6 +331,8 @@ export default function DivisionTabs({
             games={unit.games}
             tournamentName={leagueName(unit)}
             activityType={unit.activityType}
+            title={unit.reserveName || unit.tournamentName || unit.activityType}
+            date={date}
             canEdit={isAdmin}
             demo={demo}
             onChange={changeGames}
