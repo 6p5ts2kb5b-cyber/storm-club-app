@@ -50,6 +50,12 @@ export interface UnitRow {
     umpire_cond_game?: number | null;
     umpire_cond_result?: string | null;
     umpire_cond_outcome?: string | null;
+    score_a?: number | null;
+    score_b?: number | null;
+    onbase_a?: number | null;
+    onbase_b?: number | null;
+    called?: boolean | null;
+    innings?: number | null;
     note: string | null;
     umpire_slots?: {
       id: string;
@@ -74,11 +80,13 @@ export interface DayRow {
 }
 
 const DAY_SELECT =
-  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,tournament_name,tournament_state,tournament_date,reserve_date,reserve_name,reserve_venue,reserve_umpires,reserve2_date,reserve2_venue,reserve2_umpires,reserve_plan,reserve2_plan,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,umpire_system,umpire_cond_game,umpire_cond_result,umpire_cond_outcome,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
+  "id,date,mode,note,activity_units(id,division,activity_type,venue,player_gather_time,gather_place,umpire_required,umpire_needed_count,umpire_offset_min,umpire_gather_time,tournament_name,tournament_state,tournament_date,reserve_date,reserve_name,reserve_venue,reserve_umpires,reserve2_date,reserve2_venue,reserve2_umpires,reserve_plan,reserve2_plan,note,grounds(id,school_name,ground_name,school_use,storm_use,status,note),coach_assignments(staff_id,staff(name)),games(id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,umpire_system,umpire_cond_game,umpire_cond_result,umpire_cond_outcome,score_a,score_b,onbase_a,onbase_b,called,innings,note,umpire_slots(id,position,staff_id,is_opponent,staff(name))),umpire_people(staff_id,offset_min,gather_time,note))";
 
 // 0009（3チーム対応）のSQLがまだのときも、画面が真っ白にならないように、古い項目だけで読み直す
+// 0020（試合の結果）をまだ実行していない場合の読み込み用
+const DAY_SELECT_NOSCORE = DAY_SELECT.replace("score_a,score_b,onbase_a,onbase_b,called,innings,", "");
 // 0019（予備日の予定）をまだ実行していない場合の読み込み用
-const DAY_SELECT_NOPLAN = DAY_SELECT.replace("reserve_plan,reserve2_plan,", "");
+const DAY_SELECT_NOPLAN = DAY_SELECT_NOSCORE.replace("reserve_plan,reserve2_plan,", "");
 // 0018（結果しだいの審判）をまだ実行していない場合の読み込み用
 const DAY_SELECT_NOCOND = DAY_SELECT_NOPLAN.replace("umpire_cond_game,umpire_cond_result,umpire_cond_outcome,", "");
 const DAY_SELECT_OLD = DAY_SELECT_NOPLAN.replace("storm_plays,opponent2,umpire_team,", "").replace("umpire_cond_game,umpire_cond_result,umpire_cond_outcome,", "").replace("tournament_name,tournament_state,tournament_date,reserve_date,reserve_name,reserve_venue,reserve_umpires,reserve2_date,reserve2_venue,reserve2_umpires,", "");
@@ -143,6 +151,12 @@ function unitToSummary(u: UnitRow): UnitSummary {
           umpireCondGame: g.umpire_cond_game ?? undefined,
           umpireCondResult: (g.umpire_cond_result as Game["umpireCondResult"]) ?? undefined,
           umpireCondOutcome: (g.umpire_cond_outcome as Game["umpireCondOutcome"]) ?? undefined,
+          scoreA: g.score_a ?? undefined,
+          scoreB: g.score_b ?? undefined,
+          onBaseA: g.onbase_a ?? undefined,
+          onBaseB: g.onbase_b ?? undefined,
+          called: g.called ?? undefined,
+          innings: g.innings ?? undefined,
           note: g.note ?? undefined,
         }),
       ),
@@ -194,7 +208,7 @@ export async function loadDays(from?: string): Promise<LoadResult<DaySummary[]>>
   let query = supabase.from("activity_days").select(DAY_SELECT).order("date");
   if (from) query = query.gte("date", from);
   let { data, error } = await query;
-  for (const sel of [DAY_SELECT_NOPLAN, DAY_SELECT_NOCOND, DAY_SELECT_OLD]) {
+  for (const sel of [DAY_SELECT_NOSCORE, DAY_SELECT_NOPLAN, DAY_SELECT_NOCOND, DAY_SELECT_OLD]) {
     if (!error) break;
     let old = supabase.from("activity_days").select(sel).order("date");
     if (from) old = old.gte("date", from);
@@ -213,7 +227,7 @@ export async function loadDay(date: string): Promise<LoadResult<DaySummary | nul
   }
   const supabase = await createClient();
   let { data, error } = await supabase.from("activity_days").select(DAY_SELECT).eq("date", date).maybeSingle();
-  for (const sel of [DAY_SELECT_NOPLAN, DAY_SELECT_NOCOND, DAY_SELECT_OLD]) {
+  for (const sel of [DAY_SELECT_NOSCORE, DAY_SELECT_NOPLAN, DAY_SELECT_NOCOND, DAY_SELECT_OLD]) {
     if (!error) break;
     const retry = (await supabase.from("activity_days").select(sel).eq("date", date).maybeSingle()) as unknown as {
       data: typeof data;

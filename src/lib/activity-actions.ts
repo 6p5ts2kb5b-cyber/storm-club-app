@@ -280,6 +280,18 @@ export interface GameInput {
   /** 「他チームが担当」の審判を出すチーム名 */
   umpireTeam: string;
   note: string;
+  /** 試合の結果（JJBF大会などリーグ戦のときだけ渡す。渡さなければ結果の列には触れない） */
+  result?: GameResult;
+}
+
+/** 試合の結果（空 = まだ） */
+export interface GameResult {
+  scoreA: number | null;
+  scoreB: number | null;
+  onBaseA: number | null;
+  onBaseB: number | null;
+  called: boolean;
+  innings: number | null;
 }
 
 export type GameSaveResult =
@@ -293,6 +305,12 @@ export type GameSaveResult =
         stormPlays: boolean;
         opponent2?: string;
         umpireTeam?: string;
+        scoreA?: number;
+        scoreB?: number;
+        onBaseA?: number;
+        onBaseB?: number;
+        called?: boolean;
+        innings?: number;
         note?: string;
       };
     }
@@ -303,13 +321,14 @@ function explainGame(err: { message?: string; code?: string } | null | undefined
   if (err?.code === "23505" || /duplicate|unique/i.test(message)) return "同じ番号の試合がすでにあります。画面を再読み込みしてから、もう一度お試しください。";
   if (err?.code === "42501" || /row-level security|permission/i.test(message)) return "試合の登録・変更は管理者だけができます。";
   if (/fetch|network/i.test(message)) return "インターネットにつながっていません。電波の良い場所でもう一度保存してください。";
-  if (/column|schema cache/i.test(message)) return "データベースの更新（0009）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。";
+  if (/column|schema cache/i.test(message)) return "データベースの更新（0009・0020）がまだです。SQL Editor で supabase/setup_all.sql を実行してください。";
   return "保存できませんでした。時間をおいてもう一度お試しください。";
 }
 
 /** 試合を追加（id が null）または更新。新しい試合は最後の番号の次になります */
 export async function saveGame(unitId: string, id: string | null, gameNo: number, input: GameInput): Promise<GameSaveResult> {
   const supabase = createClient();
+  const r = input.result;
   const values = {
     start_time: input.start || null,
     opponent: input.opponent.trim() || null,
@@ -317,8 +336,18 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
     opponent2: input.stormPlays ? null : input.opponent2.trim() || null,
     umpire_team: input.umpireTeam.trim() || null,
     note: input.note.trim() || null,
+    ...(r
+      ? {
+          score_a: r.scoreA,
+          score_b: r.scoreB,
+          onbase_a: r.onBaseA,
+          onbase_b: r.onBaseB,
+          called: r.called,
+          innings: r.innings,
+        }
+      : {}),
   };
-  const cols = "id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,note";
+  const cols = `id,game_no,start_time,opponent,storm_plays,opponent2,umpire_team,note${r ? ",score_a,score_b,onbase_a,onbase_b,called,innings" : ""}`;
   const { data, error } = id
     ? await supabase.from("games").update(values).eq("id", id).select(cols).single()
     : await supabase.from("games").insert({ unit_id: unitId, game_no: gameNo, ...values }).select(cols).single();
@@ -332,6 +361,12 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
     opponent2: string | null;
     umpire_team: string | null;
     note: string | null;
+    score_a?: number | null;
+    score_b?: number | null;
+    onbase_a?: number | null;
+    onbase_b?: number | null;
+    called?: boolean | null;
+    innings?: number | null;
   };
   return {
     ok: true,
@@ -343,6 +378,12 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
       stormPlays: row.storm_plays ?? true,
       opponent2: row.opponent2 ?? undefined,
       umpireTeam: row.umpire_team ?? undefined,
+      scoreA: row.score_a ?? undefined,
+      scoreB: row.score_b ?? undefined,
+      onBaseA: row.onbase_a ?? undefined,
+      onBaseB: row.onbase_b ?? undefined,
+      called: row.called ?? undefined,
+      innings: row.innings ?? undefined,
       note: row.note ?? undefined,
     },
   };

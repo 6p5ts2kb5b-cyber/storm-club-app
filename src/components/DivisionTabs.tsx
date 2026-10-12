@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CoachPanel from "@/components/CoachPanel";
 import GamePanel from "@/components/GamePanel";
+import { leagueName } from "@/lib/league";
 import LineShare from "@/components/LineShare";
 import GroundPanel from "@/components/GroundPanel";
 import PlayerGatherPanel from "@/components/PlayerGatherPanel";
@@ -328,6 +329,8 @@ export default function DivisionTabs({
             key={`games-${unit.division}`}
             unitId={unit.id}
             games={unit.games}
+            tournamentName={leagueName(unit)}
+            activityType={unit.activityType}
             canEdit={isAdmin}
             demo={demo}
             onChange={changeGames}

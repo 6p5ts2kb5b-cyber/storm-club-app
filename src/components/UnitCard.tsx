@@ -2,7 +2,9 @@
 //   上段：区分名と、まだ決まっていない項目の数
 //   中段：時刻のマス目（選手集合・審判集合・第1〜N試合）＝スコアボードのイニング欄
 //   下段：項目ごとのランプ（緑＝決定・黄＝確認中・赤＝未確定）
+import LeaguePanel from "@/components/LeaguePanel";
 import Lamp from "@/components/Lamp";
+import { leagueName } from "@/lib/league";
 import { DIVISION_LABEL, formatTime } from "@/lib/divisions";
 import { checkUnit, isRest, type Level, reserveText, restWhy, type UnitSummary, worstLevel } from "@/lib/status";
 
@@ -117,6 +119,8 @@ export default function UnitCard({ unit, compact = false }: { unit: UnitSummary;
           </div>
         ))}
       </div>
+
+      <LeaguePanel games={unit.games} tournamentName={leagueName(unit)} type={unit.activityType} compact />
 
       <ul className="board__checks">
         {checks.map((it, n) => (

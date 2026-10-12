@@ -30,6 +30,15 @@ export interface Game {
   umpireCondResult?: "lose" | "win";
   /** 実際の結果（未入力ならまだ決まっていない） */
   umpireCondOutcome?: "lose" | "win";
+  /** 試合の結果（リーグ戦用）：先に書いたチーム（STORMが出る試合ならうち）の得点／相手の得点 */
+  scoreA?: number;
+  scoreB?: number;
+  /** 出塁数（任意） */
+  onBaseA?: number;
+  onBaseB?: number;
+  /** コールドゲーム／試合の回数（STORM杯用） */
+  called?: boolean;
+  innings?: number;
   note?: string;
 }
 

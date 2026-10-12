@@ -5,7 +5,7 @@
 --         このファイルの中身をすべて貼り付けて「Run」を押すだけ。
 --         何度実行しても壊れないように作ってあります。
 --
--- 中身は supabase/migrations/0001〜0019 を順番につなげたものです。
+-- 中身は supabase/migrations/0001〜0020 を順番につなげたものです。
 -- ============================================================
 
 -- >>>>>>>>>> 0001_staff_and_login.sql >>>>>>>>>>
@@ -628,3 +628,16 @@ alter table public.games add constraint games_umpire_cond_outcome_check check (u
 
 alter table public.activity_units add column if not exists reserve_plan  text;  -- 予備日の予定（大会が実施された場合）
 alter table public.activity_units add column if not exists reserve2_plan text;  -- 予備日の予備日の予定（大会が実施された場合）
+
+-- ============================================================
+-- 0020_game_result.sql
+-- ============================================================
+-- 何度実行しても大丈夫です。既存のデータは変わりません（空のまま）。
+-- score_a = 先に書いたチーム（STORMが出る試合なら「うち」）の得点、score_b = 相手の得点
+
+alter table public.games add column if not exists score_a   integer;
+alter table public.games add column if not exists score_b   integer;
+alter table public.games add column if not exists onbase_a  integer;
+alter table public.games add column if not exists onbase_b  integer;
+alter table public.games add column if not exists called    boolean;   -- コールドゲーム（STORM杯用）
+alter table public.games add column if not exists innings   integer;   -- 試合の回数（STORM杯用。空なら7回）
