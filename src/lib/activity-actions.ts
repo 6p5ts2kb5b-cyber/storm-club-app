@@ -352,7 +352,7 @@ export async function saveGame(unitId: string, id: string | null, gameNo: number
     ? await supabase.from("games").update(values).eq("id", id).select(cols).single()
     : await supabase.from("games").insert({ unit_id: unitId, game_no: gameNo, ...values }).select(cols).single();
   if (error || !data) return { ok: false, message: explainGame(error) };
-  const row = data as {
+  const row = data as unknown as {
     id: string;
     game_no: number;
     start_time: string | null;
