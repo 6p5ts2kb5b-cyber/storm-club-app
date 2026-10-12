@@ -17,6 +17,10 @@ export interface UnitInput {
   /** 指導者（スタッフの番号） */
   coachIds: string[];
   note: string;
+  /** 審判集合時間 "07:30"。未指定（undefined）なら今の設定をそのまま残す。空文字は「自動に戻す」 */
+  umpireGatherTime?: string;
+  /** 1試合目の開始時間 "09:00"（空なら何もしない） */
+  firstGameStart?: string;
 }
 
 export interface DayInput {
@@ -40,7 +44,19 @@ function unitValues(input: DayInput, division: Division) {
     umpire_required: u.umpireNeeded > 0,
     umpire_needed_count: Math.max(0, Math.min(8, u.umpireNeeded)),
     note: clean(u.note),
+    ...(u.umpireGatherTime !== undefined ? { umpire_gather_time: u.umpireGatherTime || null } : {}),
   };
+}
+
+/** 1試合目の開始時間を保存（試合がまだなければ作る） */
+async function saveFirstGame(supabase: ReturnType<typeof createClient>, unitId: string, start: string | undefined) {
+  if (!start) return;
+  const { data: found } = await supabase.from("games").select("id,start_time").eq("unit_id", unitId).eq("game_no", 1).maybeSingle();
+  if (found) {
+    if (!found.start_time || found.start_time.slice(0, 5) !== start) await supabase.from("games").update({ start_time: start }).eq("id", found.id);
+  } else {
+    await supabase.from("games").insert({ unit_id: unitId, game_no: 1, start_time: start });
+  }
 }
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -90,6 +106,7 @@ export async function createDay(input: DayInput): Promise<ActionResult> {
       (input.units?.[m.division]?.coachIds ?? []).map((staff_id) => ({ unit_id: m.id, staff_id })),
     );
     if (coachRows.length) await supabase.from("coach_assignments").insert(coachRows);
+    for (const m of (made ?? []) as { id: string; division: Division }[]) await saveFirstGame(supabase, m.id, input.units?.[m.division]?.firstGameStart);
   }
   if (unitError) {
     // 途中で失敗したら、作りかけの活動日を消して元に戻す
@@ -135,6 +152,7 @@ export async function updateDay(dayId: string, input: DayInput): Promise<ActionR
       if (e) return { ok: false, message: explain(e) };
       unitId = made?.id;
     }
+    if (unitId) await saveFirstGame(supabase, unitId, input.units?.[division]?.firstGameStart);
     // 指導者：増えた人を入れ、外した人を消す
     const want = input.units?.[division]?.coachIds;
     if (want && unitId) {

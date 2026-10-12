@@ -3,9 +3,10 @@
 // 活動日の登録・編集パネル（下から出てくる入力画面）
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { parseQuick } from "@/lib/quick-input";
 import { ACTIVITY_TYPES, createDay, deleteDay, type DayInput, type UnitInput, updateDay, validateDay } from "@/lib/activity-actions";
 import type { StaffOption } from "@/lib/data";
-import { autoModeForDate, DIVISION_LABEL, divisionsForMode, type DayMode, type Division } from "@/lib/divisions";
+import { autoModeForDate, DIVISION_LABEL, divisionsForMode, todayInTokyo, type DayMode, type Division } from "@/lib/divisions";
 import type { DaySummary } from "@/lib/status";
 
 const MODE_LABEL: Record<DayMode, string> = {
@@ -33,12 +34,13 @@ function initialInput(day: DaySummary | undefined, defaultDate: string): DayInpu
         umpireNeeded: u.umpireRequired ? u.umpireNeeded : 0,
         coachIds: u.coachIds ?? [],
         note: u.note ?? "",
+        firstGameStart: u.games.find((g) => g.no === 1)?.start?.slice(0, 5) ?? "",
       }),
   );
   // 区分を切り替えたときのために、ある区分の内容を、ない区分の初期値にも使う（指導者・審判は引き継がない）
   const base = day.units[0] ? units[day.units[0].division]! : blankUnit(day.activityType || "練習試合");
   ALL_DIVISIONS.forEach((d) => {
-    if (!units[d]) units[d] = { ...base, coachIds: [], umpireNeeded: 0, note: "" };
+    if (!units[d]) units[d] = { ...base, coachIds: [], umpireNeeded: 0, note: "", firstGameStart: "" };
   });
   return { date: day.date, mode: day.mode, activityType: day.activityType || "練習試合", venues: {}, note: day.note ?? "", units };
 }
@@ -65,6 +67,40 @@ export default function ActivityForm({
   const [modeTouched, setModeTouched] = useState(Boolean(day));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [quick, setQuick] = useState("");
+  const [quickNotes, setQuickNotes] = useState<{ read: string[]; ignored: string[] } | null>(null);
+
+  // 「ひとこと入力」を読み取って、フォームに入れる（保存はしません）
+  function applyQuick() {
+    const r = parseQuick(quick, todayInTokyo());
+    const date = r.date ?? input.date;
+    const mode: DayMode = r.split ? "split" : !modeTouched && r.date ? autoModeForDate(date) : input.mode;
+    if (r.split) setModeTouched(true);
+    setInput((i) => {
+      const units = { ...(i.units ?? {}) };
+      for (const d of ALL_DIVISIONS) {
+        const q = { ...r.common, ...(r.byDivision[d] ?? {}) };
+        const cur = units[d] ?? blankUnit();
+        if (Object.keys(q).length === 0) continue;
+        const coachIds = q.coachWords
+          ? staff.filter((st) => st.is_active && st.can_coach && q.coachWords!.some((w) => st.name.includes(w))).map((st) => st.id)
+          : cur.coachIds;
+        units[d] = {
+          ...cur,
+          ...(q.activityType ? { activityType: q.activityType } : {}),
+          ...(q.venue ? { venue: q.venue } : {}),
+          ...(q.gatherTime ? { gatherTime: q.gatherTime } : {}),
+          ...(q.umpireNeeded !== undefined ? { umpireNeeded: q.umpireNeeded } : {}),
+          ...(q.umpireGatherTime ? { umpireGatherTime: q.umpireGatherTime } : {}),
+          ...(q.firstGameStart ? { firstGameStart: q.firstGameStart } : {}),
+          coachIds: q.coachWords && coachIds.length ? coachIds : cur.coachIds,
+        };
+      }
+      return { ...i, date, mode, units };
+    });
+    setQuickNotes({ read: r.notes, ignored: r.ignored });
+  }
 
   const isEdit = Boolean(day);
   const autoMode = /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? autoModeForDate(input.date) : input.mode;
@@ -164,6 +200,27 @@ export default function ActivityForm({
           </button>
         </div>
 
+        <div className="field quick-input">
+          <span className="field__label">ひとこと入力（任意）</span>
+          <textarea
+            className="input input--area"
+            rows={2}
+            value={quick}
+            onChange={(e) => setQuick(e.target.value)}
+            placeholder="例：11月3日 審判2名 審判7:30集合 生徒7:00集合 1試合目9:00開始"
+          />
+          <button type="button" className="btn btn--block" onClick={applyQuick} disabled={!quick.trim()}>
+            読み取って下の入力欄に入れる
+          </button>
+          {quickNotes && (
+            <p className="field__hint">
+              {quickNotes.read.length ? `読み取り：${quickNotes.read.join("／")}。` : "読み取れる内容がありませんでした。"}
+              {quickNotes.ignored.length ? ` 読み取れなかった時刻：${quickNotes.ignored.join("、")}。` : ""}
+              内容を確認して「保存する」を押してください。
+            </p>
+          )}
+        </div>
+
         <label className="field">
           <span className="field__label">日付</span>
           <input className="input" type="date" value={input.date} onChange={(e) => setDate(e.target.value)} />
@@ -230,6 +287,11 @@ export default function ActivityForm({
                 <input className="input" type="time" value={u.gatherTime} onChange={(e) => setUnit(d, { gatherTime: e.target.value })} />
               </label>
 
+              <label className="field">
+                <span className="field__label">1試合目の開始時間（未定なら空のまま）</span>
+                <input className="input" type="time" value={u.firstGameStart ?? ""} onChange={(e) => setUnit(d, { firstGameStart: e.target.value })} />
+              </label>
+
               <div className="field">
                 <span className="field__label">審判の人数</span>
                 <div className="chip-grid">
@@ -247,6 +309,13 @@ export default function ActivityForm({
                 </div>
                 <span className="field__hint">審判の名前は、保存したあとの画面で入れます。</span>
               </div>
+
+              {u.umpireNeeded > 0 && (
+                <label className="field">
+                  <span className="field__label">審判集合時間（空のままなら、試合時間から自動で決まります）</span>
+                  <input className="input" type="time" value={u.umpireGatherTime ?? ""} onChange={(e) => setUnit(d, { umpireGatherTime: e.target.value })} />
+                </label>
+              )}
 
               {staff.length > 0 && (
                 <div className="field">
