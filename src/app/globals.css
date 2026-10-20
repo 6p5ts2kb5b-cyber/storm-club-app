@@ -4776,3 +4776,42 @@ select.input {
   0%, 100% { transform: scale(0.6); opacity: 0.5; }
   50% { transform: scale(1); opacity: 1; }
 }
+
+/* ログイン・規約など、メニューのない画面：PCでも画面いっぱいに使う
+   （メニューがないのに左の220pxの枠に押し込まれて、文字が切れていた） */
+@media (min-width: 900px) {
+  .app-shell:not(:has(.app-nav)) {
+    display: block;
+  }
+
+  .login__card {
+    max-width: 460px;
+    gap: 14px;
+  }
+
+  .login__title {
+    font-size: 128px;
+  }
+
+  .login__sub {
+    margin-bottom: 36px;
+    font-size: 18px;
+    letter-spacing: 0.06em;
+  }
+
+  .login__card .btn--google {
+    min-height: 60px;
+    font-size: 18px;
+  }
+
+  .login__note {
+    margin-top: 18px;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .login__links {
+    margin-top: 10px;
+    font-size: 14px;
+  }
+}
