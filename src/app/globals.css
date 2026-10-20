@@ -4721,3 +4721,58 @@ select.input {
     gap: 12px;
   }
 }
+
+/* 読み込み中：野球のボール */
+.ball-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 72px 0;
+}
+.ball-loader__stage {
+  position: relative;
+  width: 64px;
+  height: 96px;
+}
+.ball-loader__ball {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.ball-loader__shadow {
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  width: 40px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(14, 59, 46, 0.18);
+}
+.ball-loader__text {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ball-loader__ball {
+    animation: ball-bounce 0.9s cubic-bezier(0.3, 0, 0.7, 1) infinite;
+  }
+  .ball-loader__ball path,
+  .ball-loader__ball g {
+    transform-origin: 32px 32px;
+  }
+  .ball-loader__shadow {
+    animation: ball-shadow 0.9s cubic-bezier(0.3, 0, 0.7, 1) infinite;
+  }
+}
+@keyframes ball-bounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(26px) rotate(180deg); }
+}
+@keyframes ball-shadow {
+  0%, 100% { transform: scale(0.6); opacity: 0.5; }
+  50% { transform: scale(1); opacity: 1; }
+}
