@@ -246,6 +246,8 @@ export default function DivisionTabs({
         </div>
       )}
 
+      <div className="detail-cols">
+      <div className="detail-col">
       {unit && (
         <div className="detail-block" id="sec-event">
           <TournamentPanel
@@ -341,6 +343,16 @@ export default function DivisionTabs({
         </div>
       )}
 
+      {unit && (
+        <div className="detail-block" id="sec-line">
+          <LineShare key={`line-${unit.division}`} date={date} unit={unit} />
+          {unit.reserveDate && unit.umpireRequired && (
+            <LineShare key={`line-reserve-${unit.division}-${(unit.reserveUmpires ?? []).join(",")}`} date={date} unit={unit} kind="reserve" />
+          )}
+        </div>
+      )}
+      </div>
+      <div className="detail-col">
       {unit && !rest && (
         <div className="detail-block" id="sec-ground">
           <GroundPanel
@@ -393,15 +405,8 @@ export default function DivisionTabs({
           />
         </div>
       )}
-
-      {unit && (
-        <div className="detail-block" id="sec-line">
-          <LineShare key={`line-${unit.division}`} date={date} unit={unit} />
-          {unit.reserveDate && unit.umpireRequired && (
-            <LineShare key={`line-reserve-${unit.division}-${(unit.reserveUmpires ?? []).join(",")}`} date={date} unit={unit} kind="reserve" />
-          )}
-        </div>
-      )}
+      </div>
+      </div>
 
       {toastEl}
     </div>

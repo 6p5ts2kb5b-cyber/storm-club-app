@@ -4676,3 +4676,48 @@ select.input {
   justify-content: space-between;
   gap: 8px;
 }
+
+/* ============================================================
+   PC（広い画面）の配置：画面の広さを使って2列にする（iPhoneは今までどおり1列）
+   ============================================================ */
+@media (min-width: 1100px) {
+  .page:not(.page--print) {
+    max-width: 1240px;
+    padding: 28px 32px 0;
+  }
+
+  .page-head__title {
+    font-size: 34px;
+  }
+
+  /* 活動日の詳細：左に「予定・予備日・試合・LINE」、右に「グラウンド・集合・指導者・審判」 */
+  .detail-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 24px;
+    align-items: start;
+  }
+
+  .detail-col > .detail-block:first-child {
+    margin-top: 0;
+  }
+
+  .jumpbar {
+    margin: 0 -32px 20px;
+    padding: 10px 32px;
+  }
+
+  /* ホーム：左に「要確認」、右に「その先の活動」 */
+  .home-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 44px;
+    align-items: start;
+  }
+
+  /* 活動一覧：カードを2列に */
+  .alist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}

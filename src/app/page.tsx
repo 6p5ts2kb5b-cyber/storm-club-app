@@ -84,6 +84,7 @@ export default async function HomePage() {
         </section>
       )}
 
+      <div className="home-cols">
       {/* 2. 要確認 */}
       {upcoming.length > 0 && (
         <section className="block" id="issues" aria-labelledby="issues-title">
@@ -150,6 +151,7 @@ export default async function HomePage() {
           </ul>
         </section>
       )}
+      </div>
     </div>
   );
 }
