@@ -192,7 +192,7 @@ export default function UmpireSlots({
             <div className={`slot-grid slot-grid--${positions.length}`}>
               {positions.map((pos) => {
                 const s = slots.find((x) => x.gameId === g.id && x.position === pos);
-                const label = s?.opponent ? umpireTeamLabel(g) : s?.staffId ? s.staffName ?? nameOf(s.staffId) ?? "（不明）" : "空き";
+                const label = s?.opponent ? umpireTeamLabel(g, games) : s?.staffId ? s.staffName ?? nameOf(s.staffId) ?? "（不明）" : "空き";
                 const state = s?.opponent ? "opp" : s?.staffId ? "staff" : "open";
                 return (
                   <button
@@ -235,7 +235,7 @@ export default function UmpireSlots({
               <span className="pick-opp__icon" aria-hidden="true">
                 ⇄
               </span>
-              {umpireTeamLabel(picking.game)}が担当
+              {umpireTeamLabel(picking.game, games)}が担当
             </button>
             <button
               type="button"
@@ -245,7 +245,7 @@ export default function UmpireSlots({
                 setPicking(null);
               }}
             >
-              この試合は全員「{umpireTeamLabel(picking.game)}」が担当
+              この試合は全員「{umpireTeamLabel(picking.game, games)}」が担当
             </button>
 
             <p className="field__label pick-label">STORMのスタッフから選ぶ</p>

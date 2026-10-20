@@ -59,6 +59,7 @@ function Group({ g }: { g: PrintGroup }) {
                     <span key={i} className={x.others ? "pl-game pl-game--others" : "pl-game"}>
                       <b>{x.time}</b>
                       {x.text}
+                      {x.ump && <small className="pl-game__ump">審判 {x.ump}</small>}
                     </span>
                   ))}
                 </span>

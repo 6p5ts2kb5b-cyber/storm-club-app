@@ -3,6 +3,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, formatDateLong, formatTime } from "./divisions";
+import { umpireName } from "@/lib/umpire-team";
 import { mdw } from "./reserve";
 import { isRest, reserveText, restWhy, type UnitSummary } from "./status";
 import {
@@ -65,7 +66,8 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
     for (const g of games) {
       const t = g.start ? formatTime(g.start) : "時間未定";
       const note = g.stormPlays === false ? "（STORMは審判のみ）" : "";
-      lines.push(`第${g.no}試合　${t}　${matchupText(g)}${note}`);
+      const ump = umpireName(unit.activityType, games, g.no - 1);
+      lines.push(`第${g.no}試合　${t}　${matchupText(g)}${note}${ump ? `（審判　${ump}）` : ""}`);
       if (g.note) lines.push(`　※${g.note}`);
     }
   }
@@ -84,7 +86,7 @@ export function buildLineMessage(date: string, unit: UnitSummary): string {
         add(`第${g.no}試合　未定`);
         continue;
       }
-      const team = umpireTeamLabel(g);
+      const team = umpireTeamLabel(g, games);
       if (mine.every((m) => m.slot?.opponent)) {
         add(`第${g.no}試合　${team}`);
         continue;

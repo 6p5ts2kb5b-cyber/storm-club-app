@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { Game } from "./status";
+import { umpireTeamText } from "@/lib/umpire-team";
 
 export type Position = "plate" | "first" | "second" | "third" | "base";
 export type UmpireSystem = 1 | 2 | 3 | 4;
@@ -58,8 +59,8 @@ export function timeMinus(time: string, minutes: number): string {
 }
 
 /** 「他チームが担当」の枠に出すチーム名（未入力なら「他チーム」） */
-export function umpireTeamLabel(g: Game | undefined): string {
-  return g?.umpireTeam?.trim() || "他チーム";
+export function umpireTeamLabel(g: Game | undefined, games?: Game[]): string {
+  return umpireTeamText(g?.umpireTeam, games) || "他チーム";
 }
 
 /** 対戦カード。STORMが出る試合は「STORM vs ◯◯」、出ない試合は「A vs B」 */
@@ -204,7 +205,7 @@ export function buildRoster(
   const opp = active.filter((s) => s.opponent);
   if (opp.length) {
     const nos = opp.map((s) => gameById.get(s.gameId)?.no ?? 0).filter(Boolean);
-    const teams = [...new Set(opp.map((s) => umpireTeamLabel(gameById.get(s.gameId))))];
+    const teams = [...new Set(opp.map((s) => umpireTeamLabel(gameById.get(s.gameId), [...gameById.values()])))];
     rows.push({
       key: "opponent",
       name: teams.join("・"),

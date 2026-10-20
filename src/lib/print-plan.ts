@@ -4,6 +4,7 @@
 // ============================================================
 
 import { DIVISION_LABEL, type Division, formatTime, weekdayIndex, weekdayLabel } from "./divisions";
+import { umpireName } from "./umpire-team";
 import { holidayName, isHoliday } from "./holidays";
 import { heldPlanText, mdw, reserveHeading, reservesByDate, umpireStatusText } from "./reserve";
 import { type DaySummary, isRest, reserveText, restWhy, type UnitSummary } from "./status";
@@ -109,6 +110,8 @@ export interface PrintGame {
   text: string;
   /** STORMが出ない試合（他チーム同士） */
   others: boolean;
+  /** 審判（大会のみ。例：第1・第2試合の敗者より1名ずつ、連盟より2名） */
+  ump?: string;
 }
 
 export interface PrintGroup {
@@ -179,16 +182,19 @@ function groupOf(u: UnitSummary, showDivision: boolean): PrintGroup {
 
   const games: PrintGame[] = [...u.games]
     .sort((a, b) => a.no - b.no)
-    .filter((g) => g.start || g.opponent || g.opponent2)
-    .map((g) =>
-      g.stormPlays === false
+    .map((g, i) => ({ g, i }))
+    .filter(({ g }) => g.start || g.opponent || g.opponent2)
+    .map(({ g, i }) => {
+      const ump = umpireName(u.activityType, u.games, i) || undefined;
+      return g.stormPlays === false
         ? {
             time: g.start ? formatTime(g.start) : "時間未定",
             text: `${g.opponent || "未定"} 対 ${g.opponent2 || "未定"}（STORMは審判担当）`,
             others: true,
+            ump,
           }
-        : { time: g.start ? formatTime(g.start) : "時間未定", text: `vs ${g.opponent || "未定"}`, others: false },
-    );
+        : { time: g.start ? formatTime(g.start) : "時間未定", text: `vs ${g.opponent || "未定"}`, others: false, ump };
+    });
 
   const notes: string[] = [];
   if (u.note) notes.push(u.note);
@@ -304,7 +310,7 @@ export function buildPrintText(rows: PrintRow[], title: string, message: string)
       const tag = g.showDivision ? `［${DIVISION_LABEL[g.division]}］` : "";
       out.push(`　${tag}${g.title}`);
       for (const l of g.lines) out.push(`　　${l.k}　${l.v}`);
-      g.games.forEach((x, i) => out.push(`　　${"①②③④⑤⑥"[i] ?? i + 1}　${x.time}　${x.text}`));
+      g.games.forEach((x, i) => out.push(`　　${"①②③④⑤⑥"[i] ?? i + 1}　${x.time}　${x.text}${x.ump ? `（審判　${x.ump}）` : ""}`));
       for (const l of g.after) out.push(`　　${l.k}　${l.v}`);
       if (g.reserve) out.push(`　　予備日　${g.reserve}`);
       if (g.reserve2) out.push(`　　予備日の予備日　${g.reserve2}`);

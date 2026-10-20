@@ -5,6 +5,8 @@ import { useState } from "react";
 import TimeField, { shiftTime } from "@/components/TimeField";
 import LeaguePanel from "@/components/LeaguePanel";
 import ResultSend from "@/components/ResultSend";
+import UmpirePicker from "@/components/UmpirePicker";
+import { autoUmpire, dayTeamNames, umpireName } from "@/lib/umpire-team";
 import { deleteGame, type GameInput, saveGame } from "@/lib/activity-actions";
 import { formatTime } from "@/lib/divisions";
 import { leagueRuleOf, OUR, parseRef } from "@/lib/league";
@@ -266,6 +268,8 @@ export default function GamePanel({
 
   // JJBF大会・STORM杯だけ、結果の欄とリーグ戦の状況を出す
   const rule = leagueRuleOf({ tournamentName, type: activityType });
+  // 大会・公式戦だけ、審判の組み合わせを選べる（練習試合は今までどおり文字で入力）
+  const isTourney = activityType === "公式戦" || activityType === "大会";
   const sorted = [...games].sort((a, b) => a.no - b.no);
   const last = sorted.at(-1);
   // 2試合以上あれば、出塁数も入れられるようにする（勝ち点・失点・得失点差が並んだとき用）
@@ -414,6 +418,9 @@ export default function GamePanel({
                   ) : (
                     <span className="muted">対戦相手 未定</span>
                   )}
+                  {isTourney && umpireName(activityType, sorted, sorted.indexOf(g)) && (
+                    <span className="game__ump">審判　{umpireName(activityType, sorted, sorted.indexOf(g))}</span>
+                  )}
                   {g.note && <span className="game__note">{g.note}</span>}
                 </span>
                 {canEdit && (
@@ -505,16 +512,45 @@ export default function GamePanel({
               </label>
             )}
 
-            <label className="field">
-              <span className="field__label">審判を出す他チーム（任意）</span>
-              <input
-                className="input"
-                value={editing.form.umpireTeam}
-                onChange={(e) => setEditing((s) => (s ? { ...s, form: { ...s.form, umpireTeam: e.target.value } } : s))}
-                placeholder="例：第1試合の勝者"
-              />
-              <span className="field__hint">審判の画面で「他チームが担当」を選んだ枠に、このチーム名が出ます。</span>
-            </label>
+            {isTourney ? (
+              (() => {
+                // いま編集中の内容を入れた、この日の試合の並び
+                const draft: Game = {
+                  id: editing.id ?? undefined,
+                  no: editing.no,
+                  stormPlays: editing.form.stormPlays,
+                  opponent: editing.form.opponent.trim() || undefined,
+                  opponent2: editing.form.opponent2.trim() || undefined,
+                };
+                const rest = sorted.filter((g) => g.no !== editing.no);
+                const list = [...rest, draft].sort((a, b) => a.no - b.no);
+                const idx = list.findIndex((g) => g.no === editing.no);
+                return (
+                  <div className="field">
+                    <UmpirePicker
+                      key={`ump-${editing.no}`}
+                      i={idx}
+                      value={editing.form.umpireTeam}
+                      auto={autoUmpire(activityType, list, idx)}
+                      teams={dayTeamNames(list)}
+                      games={list}
+                      onChange={(v) => setEditing((s) => (s ? { ...s, form: { ...s.form, umpireTeam: v } } : s))}
+                    />
+                  </div>
+                );
+              })()
+            ) : (
+  <label className="field">
+                <span className="field__label">審判を出す他チーム（任意）</span>
+                <input
+                  className="input"
+                  value={editing.form.umpireTeam}
+                  onChange={(e) => setEditing((s) => (s ? { ...s, form: { ...s.form, umpireTeam: e.target.value } } : s))}
+                  placeholder="例：第1試合の勝者"
+                />
+                <span className="field__hint">審判の画面で「他チームが担当」を選んだ枠に、このチーム名が出ます。</span>
+              </label>
+            )}
 
             {rule && editing.form.result && (
               <ScoreRow

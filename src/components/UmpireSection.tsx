@@ -92,7 +92,7 @@ export default function UmpireSection({
               : { gameId: game.id, position, opponent: true },
           ];
     onPatch({ umpireSlots: next });
-    const who = choice === null ? "空き" : "staffId" in choice ? `${nameOf(choice.staffId)}さん` : umpireTeamLabel(game);
+    const who = choice === null ? "空き" : "staffId" in choice ? `${nameOf(choice.staffId)}さん` : umpireTeamLabel(game, unit.games);
     if (!live) return done(`第${game.no}試合を「${who}」にしました`);
     setBusyKey(`${game.id}-${position}`);
     const r = await setSlot(game.id, position, choice);
@@ -115,7 +115,7 @@ export default function UmpireSection({
       ...positions.map((position): Slot => ({ gameId: game.id as string, position, opponent: true })),
     ];
     onPatch({ umpireSlots: next });
-    const label = umpireTeamLabel(game);
+    const label = umpireTeamLabel(game, unit.games);
     if (!live) return done(`第${game.no}試合の審判を「${label}」にしました`);
     setBusyKey(`${game.id}-all`);
     for (const position of positions) {
@@ -142,7 +142,7 @@ export default function UmpireSection({
     const kept = slots.filter((s) => s.gameId !== game.id || !free.includes(s.position));
     const next = [...kept, ...changes.filter((c) => c.opp).map((c): Slot => ({ gameId: game.id as string, position: c.position, opponent: true }))];
     onPatch({ umpireSlots: next });
-    const text = `第${game.no}試合：STORM ${stormCount}名＋${umpireTeamLabel(game)} ${positions.length - stormCount}名`;
+    const text = `第${game.no}試合：STORM ${stormCount}名＋${umpireTeamLabel(game, unit.games)} ${positions.length - stormCount}名`;
     if (!live) return done(text);
     setBusyKey(`${game.id}-split`);
     for (const c of changes) {

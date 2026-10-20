@@ -4815,3 +4815,100 @@ select.input {
     font-size: 14px;
   }
 }
+
+/* 審判の組み合わせ（大会） */
+.ump-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ump-pick__now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+.ump-pick__now b {
+  flex: none;
+  font-weight: 900;
+}
+.ump-pick__now span {
+  font-weight: 700;
+}
+.ump-pick__now small {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+.ump-pick__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pick {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pick.is-active {
+  border-color: var(--board);
+  background: var(--board);
+  color: var(--bulb);
+}
+/* 「第1試合の勝者」などは点線の枠 */
+.pick--ref {
+  border-style: dashed;
+}
+/* 「第○試合の2チームから」は青い点線 */
+.pick--cross {
+  border-style: dashed;
+  border-color: #9db8e6;
+  color: #1f4fa3;
+}
+.pick--cross.is-active {
+  border-style: solid;
+  border-color: var(--board);
+  background: var(--board);
+  color: var(--bulb);
+}
+.ump-pick__type {
+  display: flex;
+  gap: 8px;
+}
+.ump-pick__type .input {
+  flex: 1;
+}
+.ump-pick__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ump-pick__row > span {
+  width: 6.5em;
+  flex: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ump-pick__row .seg {
+  flex: 1;
+  min-width: 220px;
+}
+.game__ump {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-3);
+}
+.pl-game__ump {
+  display: block;
+  margin-left: 4px;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: #555;
+}
